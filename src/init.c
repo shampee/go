@@ -41,3 +41,14 @@ void cleanup(void)
 
 	SDL_Quit();
 }
+
+Stone* stone_create(void)
+{
+	Stone* stone = (Stone*)calloc(1, sizeof(Stone));
+	return stone;
+}
+
+void stone_destroy(Stone* stone)
+{
+	free(stone);
+}
