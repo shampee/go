@@ -52,7 +52,6 @@ Grid draw_grid(int grid_size, SDL_bool mouse_active, SDL_bool mouse_hover)
 
 	Grid grid = { .size			= grid_size,
 				  .cell_size	= cell_size,
-				  .cursor		= grid_cursor,
 				  .cursor_ghost = grid_cursor_ghost };
 	return grid;
 }
