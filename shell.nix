@@ -16,5 +16,6 @@ in
             SDL2_ttf
             SDL2_mixer
             clang-tools
+            valgrind
         ];
     }
