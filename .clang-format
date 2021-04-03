@@ -30,16 +30,16 @@ BinPackArguments: true
 BinPackParameters: true
 BraceWrapping:
   AfterClass: false
-  AfterControlStatement: false
+  AfterControlStatement: true
   AfterEnum: false
   AfterFunction: true
   AfterNamespace: true
   AfterObjCDeclaration: false
-  AfterStruct: false
-  AfterUnion: false
+  AfterStruct: true
+  AfterUnion: true
   #AfterExternBlock: false # Unknown to clang-format-5.0
   BeforeCatch: false
-  BeforeElse: false
+  BeforeElse: true
   IndentBraces: false
   #SplitEmptyFunction: true # Unknown to clang-format-4.0
   #SplitEmptyRecord: true # Unknown to clang-format-4.0
@@ -495,7 +495,7 @@ IncludeCategories:
   - Regex: '.*'
     Priority: 1
 IncludeIsMainRegex: '(Test)?$'
-IndentCaseLabels: false
+IndentCaseLabels: true
 #IndentPPDirectives: None # Unknown to clang-format-5.0
 IndentWidth: 4
 IndentWrappedFunctionNames: false
