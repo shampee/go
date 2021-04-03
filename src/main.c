@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 
 	atexit(cleanup);
 
-	int grid_size	   = 19;
+	int grid_size	   = 13;
 	int difference	   = SCREEN_HEIGHT - SCREEN_HEIGHT / grid_size * grid_size;
 	int grid_cell_size = SCREEN_HEIGHT / grid_size;
 	int grid_width	   = SCREEN_HEIGHT - difference;
@@ -22,14 +22,14 @@ int main(int argc, char* argv[])
 
 	for (int i = 0; i < grid_size * grid_size; i++) {
 		stone_array[i]	  = stone_create();
-		stone_array[i]->w = grid_cell_size;
-		stone_array[i]->h = grid_cell_size;
+		stone_array[i]->w = grid_cell_size / 2;
+		stone_array[i]->h = grid_cell_size / 2;
 	}
 
 	// The cursor ghost is a cursor that always shows in the cell below the mouse cursor.
-	SDL_Rect grid_cursor_ghost = { (grid_width - 1) / 2 * grid_cell_size,
-								   (grid_height - 1) / 2 * grid_cell_size,
-								   grid_cell_size, grid_cell_size };
+	SDL_Rect grid_cursor_ghost = { (grid_width - 2) / 2 * grid_cell_size,
+								   (grid_height - 2) / 2 * grid_cell_size,
+								   grid_cell_size / 2, grid_cell_size / 2 };
 
 	// Light theme.
 	SDL_Color grid_background		  = { 129, 162, 190, 255 };
@@ -55,9 +55,11 @@ int main(int argc, char* argv[])
 				if (stone_cursor <= grid_size * grid_size) {
 					stone_cursor++;
 					stone_array[stone_cursor]->x =
-						(event.motion.x / grid_cell_size) * grid_cell_size;
+						(event.motion.x / grid_cell_size) * grid_cell_size -
+						grid_cell_size / 4;
 					stone_array[stone_cursor]->y =
-						(event.motion.y / grid_cell_size) * grid_cell_size;
+						(event.motion.y / grid_cell_size) * grid_cell_size -
+						grid_cell_size / 4;
 
 					printf("%d (x: %d, y: %d), (w: %d, h: %d)\n", stone_cursor,
 						   stone_array[stone_cursor]->x,
@@ -68,9 +70,11 @@ int main(int argc, char* argv[])
 				break;
 			case SDL_MOUSEMOTION:
 				grid_cursor_ghost.x =
-					(event.motion.x / grid_cell_size) * grid_cell_size;
+					(event.motion.x / grid_cell_size) * grid_cell_size -
+					grid_cell_size / 4;
 				grid_cursor_ghost.y =
-					(event.motion.y / grid_cell_size) * grid_cell_size;
+					(event.motion.y / grid_cell_size) * grid_cell_size -
+					grid_cell_size / 4;
 
 				if (!mouse_active)
 					mouse_active = SDL_TRUE;
