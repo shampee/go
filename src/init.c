@@ -8,7 +8,8 @@ void init_sdl(void)
 
 	windowFlags = 0;
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	{
 		printf("Couldn't initialize SDL: %s\n", SDL_GetError());
 		exit(1);
 	}
@@ -17,7 +18,8 @@ void init_sdl(void)
 		SDL_CreateWindow("Go", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 						 SCREEN_HEIGHT, SCREEN_HEIGHT, windowFlags);
 
-	if (!app.window) {
+	if (!app.window)
+	{
 		printf("Failed to open %d x %d window: %s\n", SCREEN_HEIGHT,
 			   SCREEN_HEIGHT, SDL_GetError());
 		exit(1);
@@ -27,7 +29,8 @@ void init_sdl(void)
 
 	app.renderer = SDL_CreateRenderer(app.window, -1, rendererFlags);
 
-	if (!app.renderer) {
+	if (!app.renderer)
+	{
 		printf("Failed to create renderer: %s\n", SDL_GetError());
 		exit(1);
 	}

@@ -26,17 +26,20 @@ Grid draw_grid(int grid_size, SDL_bool mouse_active, SDL_bool mouse_hover)
 						   grid_line_color.b, grid_line_color.a);
 
 	for (int x = cell_size; x < cell_size + cell_size * grid_size;
-		 x += cell_size) {
+		 x += cell_size)
+	{
 		SDL_RenderDrawLine(app.renderer, x, cell_size, x, board_size);
 	}
 
 	for (int y = cell_size; y < cell_size + cell_size * grid_size;
-		 y += cell_size) {
+		 y += cell_size)
+	{
 		SDL_RenderDrawLine(app.renderer, border, y, board_size, y);
 	}
 
 	// Draw grid ghost cursor
-	if (mouse_active && mouse_hover) {
+	if (mouse_active && mouse_hover)
+	{
 		SDL_SetRenderDrawColor(app.renderer, grid_cursor_ghost_color.r,
 							   grid_cursor_ghost_color.g,
 							   grid_cursor_ghost_color.b,

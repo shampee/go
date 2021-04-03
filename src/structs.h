@@ -1,9 +1,11 @@
-typedef struct {
+typedef struct
+{
 	SDL_Renderer* renderer;
 	SDL_Window*	  window;
 } App;
 
-typedef struct {
+typedef struct
+{
 	int		 size;
 	int		 cell_size;
 	SDL_Rect cursor_ghost;

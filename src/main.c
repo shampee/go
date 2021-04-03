@@ -20,7 +20,8 @@ int main(int argc, char* argv[])
 	Stone* stone_array[grid_size * grid_size];
 	int	   stone_cursor = 0;
 
-	for (int i = 0; i < grid_size * grid_size; i++) {
+	for (int i = 0; i < grid_size * grid_size; i++)
+	{
 		stone_array[i]	  = stone_create();
 		stone_array[i]->w = grid_cell_size / 2;
 		stone_array[i]->h = grid_cell_size / 2;
@@ -41,54 +42,60 @@ int main(int argc, char* argv[])
 	SDL_bool mouse_active = SDL_FALSE;
 	SDL_bool mouse_hover  = SDL_FALSE;
 
-	while (!quit) {
+	while (!quit)
+	{
 		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-			case SDL_KEYDOWN:
-				switch (event.key.keysym.sym) {
-				case SDLK_ESCAPE:
+		while (SDL_PollEvent(&event))
+		{
+			switch (event.type)
+			{
+				case SDL_KEYDOWN:
+					switch (event.key.keysym.sym)
+					{
+						case SDLK_ESCAPE:
+							break;
+					}
 					break;
-				}
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				if (stone_cursor <= grid_size * grid_size) {
-					stone_cursor++;
-					stone_array[stone_cursor]->x =
+				case SDL_MOUSEBUTTONDOWN:
+					if (stone_cursor <= grid_size * grid_size)
+					{
+						stone_cursor++;
+						stone_array[stone_cursor]->x =
+							(event.motion.x / grid_cell_size) * grid_cell_size -
+							grid_cell_size / 4;
+						stone_array[stone_cursor]->y =
+							(event.motion.y / grid_cell_size) * grid_cell_size -
+							grid_cell_size / 4;
+
+						printf("%d (x: %d, y: %d), (w: %d, h: %d)\n",
+							   stone_cursor, stone_array[stone_cursor]->x,
+							   stone_array[stone_cursor]->y,
+							   stone_array[stone_cursor]->w,
+							   stone_array[stone_cursor]->h);
+					}
+					break;
+				case SDL_MOUSEMOTION:
+					grid_cursor_ghost.x =
 						(event.motion.x / grid_cell_size) * grid_cell_size -
 						grid_cell_size / 4;
-					stone_array[stone_cursor]->y =
+					grid_cursor_ghost.y =
 						(event.motion.y / grid_cell_size) * grid_cell_size -
 						grid_cell_size / 4;
 
-					printf("%d (x: %d, y: %d), (w: %d, h: %d)\n", stone_cursor,
-						   stone_array[stone_cursor]->x,
-						   stone_array[stone_cursor]->y,
-						   stone_array[stone_cursor]->w,
-						   stone_array[stone_cursor]->h);
-				}
-				break;
-			case SDL_MOUSEMOTION:
-				grid_cursor_ghost.x =
-					(event.motion.x / grid_cell_size) * grid_cell_size -
-					grid_cell_size / 4;
-				grid_cursor_ghost.y =
-					(event.motion.y / grid_cell_size) * grid_cell_size -
-					grid_cell_size / 4;
-
-				if (!mouse_active)
-					mouse_active = SDL_TRUE;
-				break;
-			case SDL_WINDOWEVENT:
-				if (event.window.event == SDL_WINDOWEVENT_ENTER && !mouse_hover)
-					mouse_hover = SDL_TRUE;
-				else if (event.window.event == SDL_WINDOWEVENT_LEAVE &&
-						 mouse_hover)
-					mouse_hover = SDL_FALSE;
-				break;
-			case SDL_QUIT:
-				quit = SDL_TRUE;
-				break;
+					if (!mouse_active)
+						mouse_active = SDL_TRUE;
+					break;
+				case SDL_WINDOWEVENT:
+					if (event.window.event == SDL_WINDOWEVENT_ENTER &&
+						!mouse_hover)
+						mouse_hover = SDL_TRUE;
+					else if (event.window.event == SDL_WINDOWEVENT_LEAVE &&
+							 mouse_hover)
+						mouse_hover = SDL_FALSE;
+					break;
+				case SDL_QUIT:
+					quit = SDL_TRUE;
+					break;
 			}
 		}
 
@@ -104,19 +111,22 @@ int main(int argc, char* argv[])
 							   grid_line_color.a);
 
 		for (int x = 0; x < 1 + grid_cell_size * grid_size + 1;
-			 x += grid_cell_size) {
+			 x += grid_cell_size)
+		{
 			SDL_RenderDrawLine(app.renderer, x, 0, x,
 							   (grid_cell_size * grid_size));
 		}
 
 		for (int y = 0; y < 1 + grid_cell_size * grid_size + 1;
-			 y += grid_cell_size) {
+			 y += grid_cell_size)
+		{
 			SDL_RenderDrawLine(app.renderer, 0, y, (grid_cell_size * grid_size),
 							   y);
 		}
 
 		// Draw grid ghost cursor.
-		if (mouse_active && mouse_hover) {
+		if (mouse_active && mouse_hover)
+		{
 			SDL_SetRenderDrawColor(app.renderer, grid_cursor_ghost_color.r,
 								   grid_cursor_ghost_color.g,
 								   grid_cursor_ghost_color.b,
