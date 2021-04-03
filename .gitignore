@@ -1,0 +1,4 @@
+.vagrant
+vgcore*
+/bin
+go
