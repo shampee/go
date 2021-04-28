@@ -45,13 +45,13 @@ void cleanup(void)
 	SDL_Quit();
 }
 
-Stone* stone_create(void)
+Cell* cell_create(void)
 {
-	Stone* stone = (Stone*)calloc(1, sizeof(Stone));
-	return stone;
+	Cell* cell = (Cell*)calloc(1, sizeof(Cell));
+	return cell;
 }
 
-void stone_destroy(Stone* stone)
+void cell_destroy(Cell* cell)
 {
-	free(stone);
+	free(cell);
 }

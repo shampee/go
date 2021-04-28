@@ -6,9 +6,12 @@ typedef struct
 
 typedef struct
 {
-	int		 size;
-	int		 cell_size;
-	SDL_Rect cursor_ghost;
-} Grid;
+	int x;
+	int y;
+} Coordinates;
 
-typedef SDL_Rect Stone;
+typedef struct
+{
+	SDL_Rect dims;
+	int		 cell_value;
+} Cell;

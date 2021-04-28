@@ -9,28 +9,23 @@ int main(int argc, char* argv[])
 
 	atexit(cleanup);
 
-	int grid_size	   = 13;
-	int difference	   = SCREEN_HEIGHT - SCREEN_HEIGHT / grid_size * grid_size;
+	int play_size	   = 13;
+	int grid_size	   = play_size + 1;
 	int grid_cell_size = SCREEN_HEIGHT / grid_size;
-	int grid_width	   = SCREEN_HEIGHT - difference;
-	int grid_height	   = SCREEN_HEIGHT - difference;
 
-	printf("difference: %d\n", difference);
-
-	Stone* stone_array[grid_size * grid_size];
-	int	   stone_cursor = 0;
+	Cell* cell_array[grid_size * grid_size];
+	int	  stone_cursor = 0;
 
 	for (int i = 0; i < grid_size * grid_size; i++)
 	{
-		stone_array[i]	  = stone_create();
-		stone_array[i]->w = grid_cell_size / 2;
-		stone_array[i]->h = grid_cell_size / 2;
+		cell_array[i]		  = cell_create();
+		cell_array[i]->dims.w = grid_cell_size / 2;
+		cell_array[i]->dims.h = grid_cell_size / 2;
 	}
 
 	// The cursor ghost is a cursor that always shows in the cell below the mouse cursor.
-	SDL_Rect grid_cursor_ghost = { (grid_width - 2) / 2 * grid_cell_size,
-								   (grid_height - 2) / 2 * grid_cell_size,
-								   grid_cell_size / 2, grid_cell_size / 2 };
+	SDL_Rect grid_cursor_ghost = { 0, 0, grid_cell_size / 2,
+								   grid_cell_size / 2 };
 
 	// Light theme.
 	SDL_Color grid_background		  = { 129, 162, 190, 255 };
@@ -60,18 +55,18 @@ int main(int argc, char* argv[])
 					if (stone_cursor <= grid_size * grid_size)
 					{
 						stone_cursor++;
-						stone_array[stone_cursor]->x =
+						cell_array[stone_cursor]->dims.x =
 							(event.motion.x / grid_cell_size) * grid_cell_size -
 							grid_cell_size / 4;
-						stone_array[stone_cursor]->y =
+						cell_array[stone_cursor]->dims.y =
 							(event.motion.y / grid_cell_size) * grid_cell_size -
 							grid_cell_size / 4;
 
 						printf("%d (x: %d, y: %d), (w: %d, h: %d)\n",
-							   stone_cursor, stone_array[stone_cursor]->x,
-							   stone_array[stone_cursor]->y,
-							   stone_array[stone_cursor]->w,
-							   stone_array[stone_cursor]->h);
+							   stone_cursor, cell_array[stone_cursor]->dims.x,
+							   cell_array[stone_cursor]->dims.y,
+							   cell_array[stone_cursor]->dims.w,
+							   cell_array[stone_cursor]->dims.h);
 					}
 					break;
 				case SDL_MOUSEMOTION:
@@ -110,18 +105,18 @@ int main(int argc, char* argv[])
 							   grid_line_color.g, grid_line_color.b,
 							   grid_line_color.a);
 
-		for (int x = 0; x < 1 + grid_cell_size * grid_size + 1;
+		for (int x = 0; x < 1 + grid_cell_size * play_size + 1;
 			 x += grid_cell_size)
 		{
-			SDL_RenderDrawLine(app.renderer, x, 0, x,
-							   (grid_cell_size * grid_size));
+			SDL_RenderDrawLine(app.renderer, x, grid_cell_size, x,
+							   (grid_cell_size * play_size));
 		}
 
-		for (int y = 0; y < 1 + grid_cell_size * grid_size + 1;
+		for (int y = 0; y < 1 + grid_cell_size * play_size + 1;
 			 y += grid_cell_size)
 		{
-			SDL_RenderDrawLine(app.renderer, 0, y, (grid_cell_size * grid_size),
-							   y);
+			SDL_RenderDrawLine(app.renderer, grid_cell_size, y,
+							   (grid_cell_size * play_size), y);
 		}
 
 		// Draw grid ghost cursor.
@@ -139,7 +134,7 @@ int main(int argc, char* argv[])
 							   grid_cursor_color.g, grid_cursor_color.b,
 							   grid_cursor_color.a);
 		for (int i = 1; i <= stone_cursor; i++)
-			SDL_RenderFillRect(app.renderer, stone_array[i]);
+			SDL_RenderFillRect(app.renderer, &cell_array[i]->dims);
 
 		SDL_RenderPresent(app.renderer);
 	}
