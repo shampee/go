@@ -142,9 +142,10 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawColor(app.renderer, grid_cursor_color.r,
 							   grid_cursor_color.g, grid_cursor_color.b,
 							   grid_cursor_color.a);
-		SDL_RenderFillRect(app.renderer, &cell_array[10][10]->dims);
+
 		SDL_RenderFillRect(app.renderer, &cell_array[1][3]->dims);
-		SDL_RenderFillRect(app.renderer, &cell_array[5][3]->dims);
+		SDL_RenderFillRect(app.renderer, &cell_array[2][5]->dims);
+		SDL_RenderFillRect(app.renderer, &cell_array[4][6]->dims);
 
 		SDL_RenderPresent(app.renderer);
 	}
