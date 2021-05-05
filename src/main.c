@@ -42,9 +42,9 @@ int main(int argc, char* argv[])
 		if (col > grid_size)
 		{
 			col = 0;
+			x	= 0;
 			row++;
 			y += grid_cell_size;
-			x = 0;
 		}
 	}
 
