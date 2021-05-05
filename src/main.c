@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 	int grid_size	   = play_size + 1;
 	int grid_cell_size = SCREEN_HEIGHT / grid_size;
 
-	Cell* cell_array[grid_size][grid_size];
+	Cell* cell_array[grid_size + 1][grid_size + 1];
 
 	int row = 0;
 	int col = 0;
