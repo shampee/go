@@ -76,6 +76,27 @@ int main(int argc, char* argv[])
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:
+					for (row = 0, col = 0; row <= grid_size;)
+					{
+						if (event.motion.x > cell_array[row][col]->dims.x &&
+							event.motion.y > cell_array[row][col]->dims.y &&
+							event.motion.x < (cell_array[row][col]->dims.x) +
+												 grid_cell_size &&
+							event.motion.y <
+								(cell_array[row][col]->dims.y) + grid_cell_size)
+						{
+							if (cell_array[row][col]->cell_value == EMPTY)
+								cell_array[row][col]->cell_value = BLACK;
+							break;
+						}
+
+						col++;
+						if (col > grid_size)
+						{
+							col = 0;
+							row++;
+						}
+					}
 					break;
 				case SDL_MOUSEMOTION:
 					grid_cursor_ghost.x =
@@ -142,11 +163,17 @@ int main(int argc, char* argv[])
 							   grid_cursor_color.g, grid_cursor_color.b,
 							   grid_cursor_color.a);
 
-		SDL_RenderFillRect(app.renderer, &cell_array[1][3]->dims);
-		SDL_RenderFillRect(app.renderer, &cell_array[2][5]->dims);
-		SDL_RenderFillRect(app.renderer, &cell_array[4][6]->dims);
-		SDL_RenderFillRect(app.renderer, &cell_array[3][3]->dims);
-		SDL_RenderFillRect(app.renderer, &cell_array[8][0]->dims);
+		for (row = 0, col = 0; row <= grid_size;)
+		{
+			if (cell_array[row][col]->cell_value == BLACK)
+				SDL_RenderFillRect(app.renderer, &cell_array[row][col]->dims);
+			col++;
+			if (col > grid_size)
+			{
+				col = 0;
+				row++;
+			}
+		}
 
 		SDL_RenderPresent(app.renderer);
 	}
