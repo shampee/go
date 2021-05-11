@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 	}
 
 	// The cursor ghost is a cursor that always shows in the cell below the mouse cursor.
-	SDL_Rect grid_cursor_ghost = { 0, 0, grid_cell_size, grid_cell_size };
+	Cell* grid_cursor_ghost;
 
 	// Light theme.
 	SDL_Color grid_background		  = { 129, 162, 190, 255 };
@@ -99,13 +99,26 @@ int main(int argc, char* argv[])
 					}
 					break;
 				case SDL_MOUSEMOTION:
-					grid_cursor_ghost.x =
-						(event.motion.x / grid_cell_size) * grid_cell_size -
-						grid_cell_size / 2;
-					grid_cursor_ghost.y =
-						(event.motion.y / grid_cell_size) * grid_cell_size -
-						grid_cell_size / 2;
+					for (row = 0, col = 0; row <= grid_size;)
+					{
+						if (event.motion.x > cell_array[row][col]->dims.x &&
+							event.motion.y > cell_array[row][col]->dims.y &&
+							event.motion.x < (cell_array[row][col]->dims.x) +
+												 grid_cell_size &&
+							event.motion.y <
+								(cell_array[row][col]->dims.y) + grid_cell_size)
+						{
+							grid_cursor_ghost = cell_array[row][col];
+							break;
+						}
 
+						col++;
+						if (col > grid_size)
+						{
+							col = 0;
+							row++;
+						}
+					}
 					if (!mouse_active)
 						mouse_active = SDL_TRUE;
 					break;
@@ -155,7 +168,8 @@ int main(int argc, char* argv[])
 								   grid_cursor_ghost_color.g,
 								   grid_cursor_ghost_color.b,
 								   grid_cursor_ghost_color.a);
-			SDL_RenderFillRect(app.renderer, &grid_cursor_ghost);
+			if (grid_cursor_ghost->cell_value == EMPTY)
+				SDL_RenderFillRect(app.renderer, &grid_cursor_ghost->dims);
 		}
 
 		// Draw grid cursor.
