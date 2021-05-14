@@ -34,6 +34,9 @@ void init_sdl(void)
 		printf("Failed to create renderer: %s\n", SDL_GetError());
 		exit(1);
 	}
+
+	// Initialize support for loading png images - can add different img types as flags
+	IMG_Init(IMG_INIT_PNG);
 }
 
 void cleanup(void)
@@ -41,6 +44,8 @@ void cleanup(void)
 	SDL_DestroyRenderer(app.renderer);
 
 	SDL_DestroyWindow(app.window);
+
+	IMG_Quit();
 
 	SDL_Quit();
 }
@@ -54,4 +59,13 @@ Cell* cell_create(void)
 void cell_destroy(Cell* cell)
 {
 	free(cell);
+}
+
+SDL_Texture* get_image(const char* file_name, SDL_Renderer* renderer)
+{
+	SDL_Surface* image = IMG_Load("b.png");
+	SDL_Texture* image_texture =
+		SDL_CreateTextureFromSurface(app.renderer, image);
+	SDL_FreeSurface(image);
+	return image_texture;
 }

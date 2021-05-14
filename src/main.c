@@ -57,6 +57,12 @@ int main(int argc, char* argv[])
 	SDL_Color grid_cursor_ghost_color = { 240, 198, 116, 255 };
 	SDL_Color grid_cursor_color		  = { 38, 50, 56, 255 };
 
+	// load image
+	SDL_Texture* black_stone;
+	SDL_Texture* white_stone;
+	black_stone = get_image("b.png", app.renderer);
+	white_stone = get_image("w.png", app.renderer);
+
 	SDL_bool quit		  = SDL_FALSE;
 	SDL_bool mouse_active = SDL_FALSE;
 	SDL_bool mouse_hover  = SDL_FALSE;
@@ -180,7 +186,11 @@ int main(int argc, char* argv[])
 		for (row = 0, col = 0; row <= grid_size;)
 		{
 			if (cell_array[row][col]->cell_value == BLACK)
-				SDL_RenderFillRect(app.renderer, &cell_array[row][col]->dims);
+				SDL_RenderCopy(app.renderer, black_stone, NULL,
+							   &cell_array[row][col]->dims);
+			else if (cell_array[row][col]->cell_value == WHITE)
+				SDL_RenderCopy(app.renderer, white_stone, NULL,
+							   &cell_array[row][col]->dims);
 			col++;
 			if (col > grid_size)
 			{
