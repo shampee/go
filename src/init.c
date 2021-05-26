@@ -63,7 +63,7 @@ void cell_destroy(Cell* cell)
 
 SDL_Texture* get_image(const char* file_name, SDL_Renderer* renderer)
 {
-	SDL_Surface* image = IMG_Load("b.png");
+	SDL_Surface* image = IMG_Load(file_name);
 	SDL_Texture* image_texture =
 		SDL_CreateTextureFromSurface(app.renderer, image);
 	SDL_FreeSurface(image);

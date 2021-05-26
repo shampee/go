@@ -82,49 +82,59 @@ int main(int argc, char* argv[])
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:
-					for (row = 0, col = 0; row <= grid_size;)
-					{
-						if (event.motion.x > cell_array[row][col]->dims.x &&
-							event.motion.y > cell_array[row][col]->dims.y &&
-							event.motion.x < (cell_array[row][col]->dims.x) +
-												 grid_cell_size &&
-							event.motion.y <
-								(cell_array[row][col]->dims.y) + grid_cell_size)
+					if (event.motion.x > 0 && event.motion.y > 0 &&
+						event.motion.x < SCREEN_HEIGHT &&
+						event.motion.y < SCREEN_HEIGHT)
+						for (row = 0, col = 0; row <= grid_size;)
 						{
-							if (cell_array[row][col]->cell_value == EMPTY)
-								cell_array[row][col]->cell_value = BLACK;
-							break;
-						}
+							if (event.motion.x > cell_array[row][col]->dims.x &&
+								event.motion.y > cell_array[row][col]->dims.y &&
+								event.motion.x <
+									(cell_array[row][col]->dims.x) +
+										grid_cell_size &&
+								event.motion.y <
+									(cell_array[row][col]->dims.y) +
+										grid_cell_size)
+							{
+								if (cell_array[row][col]->cell_value == EMPTY)
+									cell_array[row][col]->cell_value = BLACK;
+								break;
+							}
 
-						col++;
-						if (col > grid_size)
-						{
-							col = 0;
-							row++;
+							col++;
+							if (col > grid_size)
+							{
+								col = 0;
+								row++;
+							}
 						}
-					}
 					break;
 				case SDL_MOUSEMOTION:
-					for (row = 0, col = 0; row <= grid_size;)
-					{
-						if (event.motion.x > cell_array[row][col]->dims.x &&
-							event.motion.y > cell_array[row][col]->dims.y &&
-							event.motion.x < (cell_array[row][col]->dims.x) +
-												 grid_cell_size &&
-							event.motion.y <
-								(cell_array[row][col]->dims.y) + grid_cell_size)
+					if (event.motion.x > 0 && event.motion.y > 0 &&
+						event.motion.x < SCREEN_HEIGHT &&
+						event.motion.y < SCREEN_HEIGHT)
+						for (row = 0, col = 0; row <= grid_size;)
 						{
-							grid_cursor_ghost = cell_array[row][col];
-							break;
-						}
+							if (event.motion.x > cell_array[row][col]->dims.x &&
+								event.motion.y > cell_array[row][col]->dims.y &&
+								event.motion.x <
+									(cell_array[row][col]->dims.x) +
+										grid_cell_size &&
+								event.motion.y <
+									(cell_array[row][col]->dims.y) +
+										grid_cell_size)
+							{
+								grid_cursor_ghost = cell_array[row][col];
+								break;
+							}
 
-						col++;
-						if (col > grid_size)
-						{
-							col = 0;
-							row++;
+							col++;
+							if (col > grid_size)
+							{
+								col = 0;
+								row++;
+							}
 						}
-					}
 					if (!mouse_active)
 						mouse_active = SDL_TRUE;
 					break;
@@ -183,6 +193,7 @@ int main(int argc, char* argv[])
 							   grid_cursor_color.g, grid_cursor_color.b,
 							   grid_cursor_color.a);
 
+		// Draw stones.
 		for (row = 0, col = 0; row <= grid_size;)
 		{
 			if (cell_array[row][col]->cell_value == BLACK)
