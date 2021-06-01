@@ -1,9 +1,9 @@
 with import <nixpkgs> {};
 
 let
-    stdenv8 = overrideCC stdenv gcc8;
+    stdenv10 = overrideCC stdenv gcc10;
 in
-    stdenv8.mkDerivation rec {
+    stdenv10.mkDerivation rec {
         name = "go";
         env = buildEnv {
             name = name;
