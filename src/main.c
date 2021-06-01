@@ -163,14 +163,14 @@ int main(int argc, char* argv[])
 							   grid_line_color.g, grid_line_color.b,
 							   grid_line_color.a);
 
-		for (int x = 0; x < 1 + grid_cell_size * play_size + 1;
+		for (int x = grid_cell_size; x < 1 + grid_cell_size * play_size + 1;
 			 x += grid_cell_size)
 		{
 			SDL_RenderDrawLine(app.renderer, x, grid_cell_size, x,
 							   (grid_cell_size * play_size));
 		}
 
-		for (int y = 0; y < 1 + grid_cell_size * play_size + 1;
+		for (int y = grid_cell_size; y < 1 + grid_cell_size * play_size + 1;
 			 y += grid_cell_size)
 		{
 			SDL_RenderDrawLine(app.renderer, grid_cell_size, y,
