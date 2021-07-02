@@ -16,11 +16,11 @@ void init_sdl(void)
 
 	app.window =
 		SDL_CreateWindow("Go", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-						 SCREEN_HEIGHT, SCREEN_HEIGHT, windowFlags);
+						 SCREEN_WIDTH, SCREEN_HEIGHT, windowFlags);
 
 	if (!app.window)
 	{
-		printf("Failed to open %d x %d window: %s\n", SCREEN_HEIGHT,
+		printf("Failed to open %d x %d window: %s\n", SCREEN_WIDTH,
 			   SCREEN_HEIGHT, SDL_GetError());
 		exit(1);
 	}

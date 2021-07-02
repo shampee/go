@@ -50,6 +50,8 @@ int main(int argc, char* argv[])
 
 	// The cursor ghost is a cursor that always shows in the cell below the mouse cursor.
 	Cell* grid_cursor_ghost;
+	grid_cursor_ghost			  = cell_create();
+	grid_cursor_ghost->cell_value = OOB;
 
 	// Light theme.
 	SDL_Color grid_background		  = { 129, 162, 190, 255 };
