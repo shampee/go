@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 
 	int play_size	   = 9;
 	int grid_size	   = play_size + 1;
-	int grid_cell_size = SCREEN_HEIGHT / grid_size;
+	int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
 
 	Cell* cell_array[grid_size + 1][grid_size + 1];
 
@@ -33,8 +33,8 @@ int main(int argc, char* argv[])
 
 		cell_array[row][col]->dims.w = grid_cell_size;
 		cell_array[row][col]->dims.h = grid_cell_size;
-		cell_array[row][col]->dims.x = x - (grid_cell_size / 2);
-		cell_array[row][col]->dims.y = y - (grid_cell_size / 2);
+		cell_array[row][col]->dims.x = x;
+		cell_array[row][col]->dims.y = y;
 
 		x += grid_cell_size;
 		col++;
@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
 	grid_cursor_ghost->cell_value = OOB;
 
 	// Light theme.
-	SDL_Color grid_background		  = { 129, 162, 190, 255 };
-	SDL_Color grid_line_color		  = { 255, 255, 255, 255 };
+	SDL_Color grid_background		  = { 222, 184, 135, 255 };
+	SDL_Color grid_line_color		  = { 0, 0, 0, 255 };
 	SDL_Color grid_cursor_ghost_color = { 240, 198, 116, 255 };
 	SDL_Color grid_cursor_color		  = { 38, 50, 56, 255 };
 
@@ -165,18 +165,20 @@ int main(int argc, char* argv[])
 							   grid_line_color.g, grid_line_color.b,
 							   grid_line_color.a);
 
-		for (int x = grid_cell_size; x < 1 + grid_cell_size * play_size + 1;
-			 x += grid_cell_size)
+		for (int x = grid_cell_size * 1.5;
+			 x < 1 + grid_cell_size * grid_size + 1; x += grid_cell_size)
 		{
-			SDL_RenderDrawLine(app.renderer, x, grid_cell_size, x,
-							   (grid_cell_size * play_size));
+			SDL_RenderDrawLine(app.renderer, x, grid_cell_size * 1.5, x,
+							   (grid_cell_size * grid_size) -
+								   (grid_cell_size / 2));
 		}
 
-		for (int y = grid_cell_size; y < 1 + grid_cell_size * play_size + 1;
-			 y += grid_cell_size)
+		for (int y = grid_cell_size * 1.5;
+			 y < 1 + grid_cell_size * grid_size + 1; y += grid_cell_size)
 		{
-			SDL_RenderDrawLine(app.renderer, grid_cell_size, y,
-							   (grid_cell_size * play_size), y);
+			SDL_RenderDrawLine(
+				app.renderer, grid_cell_size * 1.5, y,
+				(grid_cell_size * grid_size) - (grid_cell_size / 2), y);
 		}
 
 		// Draw grid ghost cursor.
