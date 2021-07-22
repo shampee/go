@@ -1,6 +1,9 @@
 #include "main.h"
 
-enum { EMPTY, BLACK, WHITE, OOB };
+enum { EMPTY,
+	   BLACK,
+	   WHITE,
+	   OOB };
 
 int main(int argc, char* argv[])
 {
@@ -59,11 +62,28 @@ int main(int argc, char* argv[])
 	SDL_Color grid_cursor_ghost_color = { 240, 198, 116, 255 };
 	SDL_Color grid_cursor_color		  = { 38, 50, 56, 255 };
 
-	// load image
+	// load images for stones
 	SDL_Texture* black_stone;
 	SDL_Texture* white_stone;
 	black_stone = get_image("b.png", app.renderer);
 	white_stone = get_image("w.png", app.renderer);
+
+	// buttons to change players turn
+	SDL_Rect blackb;
+	SDL_Rect whiteb;
+
+	blackb.w = grid_cell_size;
+	blackb.h = grid_cell_size;
+	blackb.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 3));
+	blackb.y = (SCREEN_HEIGHT / (grid_size + 1)) * 3;
+
+	whiteb.w = grid_cell_size;
+	whiteb.h = grid_cell_size;
+	whiteb.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 3));
+	whiteb.y = (SCREEN_HEIGHT / (grid_size + 1)) * 5;
+
+	// variable that says whose turn it is
+	int turn = BLACK;
 
 	SDL_bool quit		  = SDL_FALSE;
 	SDL_bool mouse_active = SDL_FALSE;
@@ -84,22 +104,18 @@ int main(int argc, char* argv[])
 					}
 					break;
 				case SDL_MOUSEBUTTONDOWN:
-					if (event.motion.x > 0 && event.motion.y > 0 &&
-						event.motion.x < SCREEN_HEIGHT &&
-						event.motion.y < SCREEN_HEIGHT)
+					if (event.motion.x > 0 && event.motion.y > 0 && event.motion.x < SCREEN_HEIGHT && event.motion.y < SCREEN_HEIGHT)
 						for (row = 0, col = 0; row <= grid_size;)
 						{
-							if (event.motion.x > cell_array[row][col]->dims.x &&
-								event.motion.y > cell_array[row][col]->dims.y &&
-								event.motion.x <
-									(cell_array[row][col]->dims.x) +
-										grid_cell_size &&
-								event.motion.y <
-									(cell_array[row][col]->dims.y) +
-										grid_cell_size)
+							if (event.motion.x > cell_array[row][col]->dims.x && event.motion.y > cell_array[row][col]->dims.y && event.motion.x < (cell_array[row][col]->dims.x) + grid_cell_size && event.motion.y < (cell_array[row][col]->dims.y) + grid_cell_size)
 							{
 								if (cell_array[row][col]->cell_value == EMPTY)
-									cell_array[row][col]->cell_value = BLACK;
+								{
+									if (turn == BLACK)
+										cell_array[row][col]->cell_value = BLACK;
+									else if (turn == WHITE)
+										cell_array[row][col]->cell_value = WHITE;
+								}
 								break;
 							}
 
@@ -110,21 +126,16 @@ int main(int argc, char* argv[])
 								row++;
 							}
 						}
+					else if (event.motion.x > blackb.x && event.motion.y > blackb.y && event.motion.x < (blackb.x + blackb.w) && event.motion.y < (blackb.y + blackb.h))
+						turn = BLACK;
+					else if (event.motion.x > whiteb.x && event.motion.y > whiteb.y && event.motion.x < (whiteb.x + whiteb.w) && event.motion.y < (whiteb.y + whiteb.h))
+						turn = WHITE;
 					break;
 				case SDL_MOUSEMOTION:
-					if (event.motion.x > 0 && event.motion.y > 0 &&
-						event.motion.x < SCREEN_HEIGHT &&
-						event.motion.y < SCREEN_HEIGHT)
+					if (event.motion.x > 0 && event.motion.y > 0 && event.motion.x < SCREEN_HEIGHT && event.motion.y < SCREEN_HEIGHT)
 						for (row = 0, col = 0; row <= grid_size;)
 						{
-							if (event.motion.x > cell_array[row][col]->dims.x &&
-								event.motion.y > cell_array[row][col]->dims.y &&
-								event.motion.x <
-									(cell_array[row][col]->dims.x) +
-										grid_cell_size &&
-								event.motion.y <
-									(cell_array[row][col]->dims.y) +
-										grid_cell_size)
+							if (event.motion.x > cell_array[row][col]->dims.x && event.motion.y > cell_array[row][col]->dims.y && event.motion.x < (cell_array[row][col]->dims.x) + grid_cell_size && event.motion.y < (cell_array[row][col]->dims.y) + grid_cell_size)
 							{
 								grid_cursor_ghost = cell_array[row][col];
 								break;
@@ -141,11 +152,9 @@ int main(int argc, char* argv[])
 						mouse_active = SDL_TRUE;
 					break;
 				case SDL_WINDOWEVENT:
-					if (event.window.event == SDL_WINDOWEVENT_ENTER &&
-						!mouse_hover)
+					if (event.window.event == SDL_WINDOWEVENT_ENTER && !mouse_hover)
 						mouse_hover = SDL_TRUE;
-					else if (event.window.event == SDL_WINDOWEVENT_LEAVE &&
-							 mouse_hover)
+					else if (event.window.event == SDL_WINDOWEVENT_LEAVE && mouse_hover)
 						mouse_hover = SDL_FALSE;
 					break;
 				case SDL_QUIT:
@@ -155,57 +164,49 @@ int main(int argc, char* argv[])
 		}
 
 		// Draw grid background.
-		SDL_SetRenderDrawColor(app.renderer, grid_background.r,
-							   grid_background.g, grid_background.b,
-							   grid_background.a);
+		SDL_SetRenderDrawColor(app.renderer, grid_background.r, grid_background.g, grid_background.b, grid_background.a);
 		SDL_RenderClear(app.renderer);
 
 		// Draw grid lines.
-		SDL_SetRenderDrawColor(app.renderer, grid_line_color.r,
-							   grid_line_color.g, grid_line_color.b,
-							   grid_line_color.a);
+		SDL_SetRenderDrawColor(app.renderer, grid_line_color.r, grid_line_color.g, grid_line_color.b, grid_line_color.a);
 
 		for (int x = grid_cell_size * 1.5;
-			 x < 1 + grid_cell_size * grid_size + 1; x += grid_cell_size)
+			 x < 1 + grid_cell_size * grid_size + 1;
+			 x += grid_cell_size)
 		{
-			SDL_RenderDrawLine(app.renderer, x, grid_cell_size * 1.5, x,
-							   (grid_cell_size * grid_size) -
-								   (grid_cell_size / 2));
+			SDL_RenderDrawLine(app.renderer, x, grid_cell_size * 1.5, x, (grid_cell_size * grid_size) - (grid_cell_size / 2));
 		}
 
 		for (int y = grid_cell_size * 1.5;
-			 y < 1 + grid_cell_size * grid_size + 1; y += grid_cell_size)
+			 y < 1 + grid_cell_size * grid_size + 1;
+			 y += grid_cell_size)
 		{
 			SDL_RenderDrawLine(
-				app.renderer, grid_cell_size * 1.5, y,
-				(grid_cell_size * grid_size) - (grid_cell_size / 2), y);
+				app.renderer, grid_cell_size * 1.5, y, (grid_cell_size * grid_size) - (grid_cell_size / 2), y);
 		}
+
+		// Draw buttons
+		SDL_RenderCopy(app.renderer, black_stone, NULL, &blackb);
+		SDL_RenderCopy(app.renderer, white_stone, NULL, &whiteb);
 
 		// Draw grid ghost cursor.
 		if (mouse_active && mouse_hover)
 		{
-			SDL_SetRenderDrawColor(app.renderer, grid_cursor_ghost_color.r,
-								   grid_cursor_ghost_color.g,
-								   grid_cursor_ghost_color.b,
-								   grid_cursor_ghost_color.a);
+			SDL_SetRenderDrawColor(app.renderer, grid_cursor_ghost_color.r, grid_cursor_ghost_color.g, grid_cursor_ghost_color.b, grid_cursor_ghost_color.a);
 			if (grid_cursor_ghost->cell_value == EMPTY)
 				SDL_RenderFillRect(app.renderer, &grid_cursor_ghost->dims);
 		}
 
 		// Draw grid cursor.
-		SDL_SetRenderDrawColor(app.renderer, grid_cursor_color.r,
-							   grid_cursor_color.g, grid_cursor_color.b,
-							   grid_cursor_color.a);
+		SDL_SetRenderDrawColor(app.renderer, grid_cursor_color.r, grid_cursor_color.g, grid_cursor_color.b, grid_cursor_color.a);
 
 		// Draw stones.
 		for (row = 0, col = 0; row <= grid_size;)
 		{
 			if (cell_array[row][col]->cell_value == BLACK)
-				SDL_RenderCopy(app.renderer, black_stone, NULL,
-							   &cell_array[row][col]->dims);
+				SDL_RenderCopy(app.renderer, black_stone, NULL, &cell_array[row][col]->dims);
 			else if (cell_array[row][col]->cell_value == WHITE)
-				SDL_RenderCopy(app.renderer, white_stone, NULL,
-							   &cell_array[row][col]->dims);
+				SDL_RenderCopy(app.renderer, white_stone, NULL, &cell_array[row][col]->dims);
 			col++;
 			if (col > grid_size)
 			{
