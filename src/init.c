@@ -59,11 +59,6 @@ Cell* cell_create(void)
 	return cell;
 }
 
-void cell_destroy(Cell* cell)
-{
-	free(cell);
-}
-
 SDL_Texture* get_image(const char* file_name, SDL_Renderer* renderer)
 {
 	SDL_Surface* image = IMG_Load(file_name);
@@ -73,9 +68,9 @@ SDL_Texture* get_image(const char* file_name, SDL_Renderer* renderer)
 	return image_texture;
 }
 
-SDL_Texture* get_text(const char* text, const char* font, int size, SDL_Color color, SDL_Renderer* renderer)
+SDL_Texture* get_text(const char* text, const char* font_path, int size, SDL_Color color, SDL_Renderer* renderer)
 {
-	TTF_Font*	 font_and_size = TTF_OpenFont(font, size);
+	TTF_Font*	 font_and_size = TTF_OpenFont(font_path, size);
 	SDL_Surface* surface_message =
 		TTF_RenderText_Solid(font_and_size, text, color);
 	SDL_Texture* message_texture = SDL_CreateTextureFromSurface(app.renderer, surface_message);

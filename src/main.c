@@ -56,11 +56,10 @@ int main(int argc, char* argv[])
 	grid_cursor_ghost			  = cell_create();
 	grid_cursor_ghost->cell_value = OOB;
 
-	// Light theme.
+	// Colors
 	SDL_Color grid_background		  = { 222, 184, 135, 255 };
 	SDL_Color grid_line_color		  = { 0, 0, 0, 255 };
 	SDL_Color grid_cursor_ghost_color = { 240, 198, 116, 255 };
-	SDL_Color grid_cursor_color		  = { 38, 50, 56, 255 };
 	SDL_Color black					  = { 0, 0, 0, 255 };
 	SDL_Color white					  = { 255, 255, 255, 0 };
 
@@ -88,7 +87,7 @@ int main(int argc, char* argv[])
 	SDL_Texture* reset_button_text;
 	reset_button_text = get_text("Reset Board", "times-new-roman.ttf", 40, black, app.renderer);
 
-	// dimensions for button for resetting board
+	// dimensions for button and its background for resetting board
 	SDL_Rect reset_board_b;
 	reset_board_b.w = grid_cell_size * 4;
 	reset_board_b.h = grid_cell_size;
@@ -233,9 +232,6 @@ int main(int argc, char* argv[])
 			if (grid_cursor_ghost->cell_value == EMPTY)
 				SDL_RenderFillRect(app.renderer, &grid_cursor_ghost->dims);
 		}
-
-		// Draw grid cursor.
-		SDL_SetRenderDrawColor(app.renderer, grid_cursor_color.r, grid_cursor_color.g, grid_cursor_color.b, grid_cursor_color.a);
 
 		// Draw stones.
 		for (row = 0, col = 0; row <= grid_size;)
