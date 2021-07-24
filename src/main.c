@@ -85,19 +85,14 @@ int main(int argc, char* argv[])
 
 	// load text for reset board button
 	SDL_Texture* reset_button_text;
-	reset_button_text = get_text("Reset Board", "times-new-roman.ttf", 40, black, app.renderer);
+	reset_button_text = get_text(" Reset Board ", "times-new-roman.ttf", 40, black, app.renderer);
 
 	// dimensions for button and its background for resetting board
 	SDL_Rect reset_board_b;
 	reset_board_b.w = grid_cell_size * 4;
 	reset_board_b.h = grid_cell_size;
-	reset_board_b.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 5));
+	reset_board_b.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 6));
 	reset_board_b.y = (SCREEN_HEIGHT / (grid_size + 1)) * 7;
-	SDL_Rect reset_board_b_background;
-	reset_board_b_background.w = grid_cell_size * 5;
-	reset_board_b_background.h = grid_cell_size;
-	reset_board_b_background.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 7));
-	reset_board_b_background.y = (SCREEN_HEIGHT / (grid_size + 1)) * 7;
 
 	// variable that tracks whose turn it is
 	int turn = BLACK;
@@ -147,7 +142,7 @@ int main(int argc, char* argv[])
 						turn = BLACK;
 					else if (event.motion.x > whiteb.x && event.motion.y > whiteb.y && event.motion.x < (whiteb.x + whiteb.w) && event.motion.y < (whiteb.y + whiteb.h))
 						turn = WHITE;
-					else if (event.motion.x > reset_board_b_background.x && event.motion.y > reset_board_b_background.y && event.motion.x < (reset_board_b_background.x + reset_board_b_background.w) && event.motion.y < (reset_board_b_background.y + reset_board_b_background.h))
+					else if (event.motion.x > reset_board_b.x && event.motion.y > reset_board_b.y && event.motion.x < (reset_board_b.x + reset_board_b.w) && event.motion.y < (reset_board_b.y + reset_board_b.h))
 					{
 						for (row = 0, col = 0; row <= grid_size;)
 						{
@@ -201,19 +196,14 @@ int main(int argc, char* argv[])
 		// Draw grid lines.
 		SDL_SetRenderDrawColor(app.renderer, grid_line_color.r, grid_line_color.g, grid_line_color.b, grid_line_color.a);
 
-		for (int x = grid_cell_size * 1.5;
-			 x < 1 + grid_cell_size * grid_size + 1;
-			 x += grid_cell_size)
+		for (int x = grid_cell_size * 1.5; x < 1 + grid_cell_size * grid_size + 1; x += grid_cell_size)
 		{
 			SDL_RenderDrawLine(app.renderer, x, grid_cell_size * 1.5, x, (grid_cell_size * grid_size) - (grid_cell_size / 2));
 		}
 
-		for (int y = grid_cell_size * 1.5;
-			 y < 1 + grid_cell_size * grid_size + 1;
-			 y += grid_cell_size)
+		for (int y = grid_cell_size * 1.5; y < 1 + grid_cell_size * grid_size + 1; y += grid_cell_size)
 		{
-			SDL_RenderDrawLine(
-				app.renderer, grid_cell_size * 1.5, y, (grid_cell_size * grid_size) - (grid_cell_size / 2), y);
+			SDL_RenderDrawLine(app.renderer, grid_cell_size * 1.5, y, (grid_cell_size * grid_size) - (grid_cell_size / 2), y);
 		}
 
 		// Draw white and black buttons
@@ -222,7 +212,7 @@ int main(int argc, char* argv[])
 
 		// Draw reset button - it would seem things are rendered on top of what was rendered before, so the order matters
 		SDL_SetRenderDrawColor(app.renderer, white.r, white.g, white.b, white.a);
-		SDL_RenderFillRect(app.renderer, &reset_board_b_background);
+		SDL_RenderFillRect(app.renderer, &reset_board_b);
 		SDL_RenderCopy(app.renderer, reset_button_text, NULL, &reset_board_b);
 
 		// Draw grid ghost cursor.
