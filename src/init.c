@@ -15,13 +15,11 @@ void init_sdl(void)
 	}
 
 	app.window =
-		SDL_CreateWindow("Go", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-						 SCREEN_WIDTH, SCREEN_HEIGHT, windowFlags);
+		SDL_CreateWindow("Go", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, windowFlags);
 
 	if (!app.window)
 	{
-		printf("Failed to open %d x %d window: %s\n", SCREEN_WIDTH,
-			   SCREEN_HEIGHT, SDL_GetError());
+		printf("Failed to open %d x %d window: %s\n", SCREEN_WIDTH, SCREEN_HEIGHT, SDL_GetError());
 		exit(1);
 	}
 
@@ -37,6 +35,9 @@ void init_sdl(void)
 
 	// Initialize support for loading png images - can add different img types as flags
 	IMG_Init(IMG_INIT_PNG);
+
+	//Initialize support for fonts
+	TTF_Init();
 }
 
 void cleanup(void)
@@ -46,6 +47,8 @@ void cleanup(void)
 	SDL_DestroyWindow(app.window);
 
 	IMG_Quit();
+
+	TTF_Quit();
 
 	SDL_Quit();
 }
@@ -68,4 +71,14 @@ SDL_Texture* get_image(const char* file_name, SDL_Renderer* renderer)
 		SDL_CreateTextureFromSurface(app.renderer, image);
 	SDL_FreeSurface(image);
 	return image_texture;
+}
+
+SDL_Texture* get_text(const char* text, const char* font, int size, SDL_Color color, SDL_Renderer* renderer)
+{
+	TTF_Font*	 font_and_size = TTF_OpenFont(font, size);
+	SDL_Surface* surface_message =
+		TTF_RenderText_Solid(font_and_size, text, color);
+	SDL_Texture* message_texture = SDL_CreateTextureFromSurface(app.renderer, surface_message);
+	SDL_FreeSurface(surface_message);
+	return message_texture;
 }

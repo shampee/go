@@ -61,6 +61,7 @@ int main(int argc, char* argv[])
 	SDL_Color grid_line_color		  = { 0, 0, 0, 255 };
 	SDL_Color grid_cursor_ghost_color = { 240, 198, 116, 255 };
 	SDL_Color grid_cursor_color		  = { 38, 50, 56, 255 };
+	SDL_Color black					  = { 0, 0, 0 };
 
 	// load images for stones
 	SDL_Texture* black_stone;
@@ -68,7 +69,7 @@ int main(int argc, char* argv[])
 	black_stone = get_image("b.png", app.renderer);
 	white_stone = get_image("w.png", app.renderer);
 
-	// buttons to change players turn
+	// dimensions for buttons to change players turn
 	SDL_Rect blackb;
 	SDL_Rect whiteb;
 
@@ -82,7 +83,18 @@ int main(int argc, char* argv[])
 	whiteb.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 3));
 	whiteb.y = (SCREEN_HEIGHT / (grid_size + 1)) * 5;
 
-	// variable that says whose turn it is
+	// load text for reset board button
+	SDL_Texture* reset_button;
+	reset_button = get_text("Reset button", "times-new-roman.ttf", 18, black, app.renderer);
+
+	// dimensions for button for resetting board
+	SDL_Rect reset_board_b;
+	reset_board_b.w = grid_cell_size * 4;
+	reset_board_b.h = grid_cell_size;
+	reset_board_b.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 6));
+	reset_board_b.y = (SCREEN_HEIGHT / (grid_size + 1)) * 7;
+
+	// variable that tracks whose turn it is
 	int turn = BLACK;
 
 	SDL_bool quit		  = SDL_FALSE;
@@ -188,6 +200,7 @@ int main(int argc, char* argv[])
 		// Draw buttons
 		SDL_RenderCopy(app.renderer, black_stone, NULL, &blackb);
 		SDL_RenderCopy(app.renderer, white_stone, NULL, &whiteb);
+		SDL_RenderCopy(app.renderer, reset_button, NULL, &reset_board_b);
 
 		// Draw grid ghost cursor.
 		if (mouse_active && mouse_hover)
