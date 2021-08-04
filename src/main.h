@@ -7,6 +7,7 @@ enum { EMPTY,
 
 #define MAXGRIDSIZE 21
 Cell* cell_array[MAXGRIDSIZE][MAXGRIDSIZE];
+Cell* grid_cursor_ghost;
 
 // variable that tracks whose turn it is
 int turn = BLACK;
@@ -123,6 +124,9 @@ void init_board(int play_size)
 			y += grid_cell_size;
 		}
 	}
+
+	grid_cursor_ghost			  = cell_create();
+	grid_cursor_ghost->cell_value = OOB;
 }
 
 void left_click_on_board(int play_size, int cursor_x, int cursor_y)
@@ -143,6 +147,49 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 				else if (turn == WHITE)
 					cell_array[row][col]->cell_value = WHITE;
 			}
+			break;
+		}
+
+		col++;
+		if (col > grid_size)
+		{
+			col = 0;
+			row++;
+		}
+	}
+}
+
+void reset_board(int play_size)
+{
+	int row		  = 0;
+	int col		  = 0;
+	int grid_size = play_size + 1;
+
+	while (row <= grid_size)
+	{
+		if (cell_array[row][col]->cell_value == BLACK || cell_array[row][col]->cell_value == WHITE)
+			cell_array[row][col]->cell_value = EMPTY;
+		col++;
+		if (col > grid_size)
+		{
+			col = 0;
+			row++;
+		}
+	}
+}
+
+void mouse_over_board(int play_size, int cursor_x, int cursor_y)
+{
+	int row			   = 0;
+	int col			   = 0;
+	int grid_size	   = play_size + 1;
+	int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
+
+	while (row <= grid_size)
+	{
+		if (cursor_x > cell_array[row][col]->dims.x && cursor_y > cell_array[row][col]->dims.y && cursor_x < (cell_array[row][col]->dims.x) + grid_cell_size && cursor_y < (cell_array[row][col]->dims.y) + grid_cell_size)
+		{
+			grid_cursor_ghost = cell_array[row][col];
 			break;
 		}
 

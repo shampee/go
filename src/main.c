@@ -15,15 +15,8 @@ int main(int argc, char* argv[])
 
 	int row = 0;
 	int col = 0;
-	int x	= 0;
-	int y	= 0;
 
 	init_board(play_size);
-
-	// The cursor ghost is a cursor that always shows in the cell below the mouse cursor.
-	Cell* grid_cursor_ghost;
-	grid_cursor_ghost			  = cell_create();
-	grid_cursor_ghost->cell_value = OOB;
 
 	// Colors
 	SDL_Color grid_background		  = { 222, 184, 135, 255 };
@@ -63,9 +56,6 @@ int main(int argc, char* argv[])
 	reset_board_b.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 6));
 	reset_board_b.y = (SCREEN_HEIGHT / (grid_size + 1)) * 7;
 
-	// variable that tracks whose turn it is
-	int turn = BLACK;
-
 	SDL_bool quit		  = SDL_FALSE;
 	SDL_bool mouse_active = SDL_FALSE;
 	SDL_bool mouse_hover  = SDL_FALSE;
@@ -86,63 +76,17 @@ int main(int argc, char* argv[])
 					break;
 				case SDL_MOUSEBUTTONDOWN:
 					if (event.motion.x > 0 && event.motion.y > 0 && event.motion.x < SCREEN_HEIGHT && event.motion.y < SCREEN_HEIGHT)
-						for (row = 0, col = 0; row <= grid_size;)
-						{
-							if (event.motion.x > cell_array[row][col]->dims.x && event.motion.y > cell_array[row][col]->dims.y && event.motion.x < (cell_array[row][col]->dims.x) + grid_cell_size && event.motion.y < (cell_array[row][col]->dims.y) + grid_cell_size)
-							{
-								if (cell_array[row][col]->cell_value == EMPTY)
-								{
-									if (turn == BLACK)
-										cell_array[row][col]->cell_value = BLACK;
-									else if (turn == WHITE)
-										cell_array[row][col]->cell_value = WHITE;
-								}
-								break;
-							}
-
-							col++;
-							if (col > grid_size)
-							{
-								col = 0;
-								row++;
-							}
-						}
+						left_click_on_board(play_size, event.motion.x, event.motion.y);
 					else if (event.motion.x > blackb.x && event.motion.y > blackb.y && event.motion.x < (blackb.x + blackb.w) && event.motion.y < (blackb.y + blackb.h))
 						turn = BLACK;
 					else if (event.motion.x > whiteb.x && event.motion.y > whiteb.y && event.motion.x < (whiteb.x + whiteb.w) && event.motion.y < (whiteb.y + whiteb.h))
 						turn = WHITE;
 					else if (event.motion.x > reset_board_b.x && event.motion.y > reset_board_b.y && event.motion.x < (reset_board_b.x + reset_board_b.w) && event.motion.y < (reset_board_b.y + reset_board_b.h))
-					{
-						for (row = 0, col = 0; row <= grid_size;)
-						{
-							if (cell_array[row][col]->cell_value == BLACK || cell_array[row][col]->cell_value == WHITE)
-								cell_array[row][col]->cell_value = EMPTY;
-							col++;
-							if (col > grid_size)
-							{
-								col = 0;
-								row++;
-							}
-						}
-					}
+						reset_board(play_size);
 					break;
 				case SDL_MOUSEMOTION:
 					if (event.motion.x > 0 && event.motion.y > 0 && event.motion.x < SCREEN_HEIGHT && event.motion.y < SCREEN_HEIGHT)
-						for (row = 0, col = 0; row <= grid_size;)
-						{
-							if (event.motion.x > cell_array[row][col]->dims.x && event.motion.y > cell_array[row][col]->dims.y && event.motion.x < (cell_array[row][col]->dims.x) + grid_cell_size && event.motion.y < (cell_array[row][col]->dims.y) + grid_cell_size)
-							{
-								grid_cursor_ghost = cell_array[row][col];
-								break;
-							}
-
-							col++;
-							if (col > grid_size)
-							{
-								col = 0;
-								row++;
-							}
-						}
+						mouse_over_board(play_size, event.motion.x, event.motion.y);
 					if (!mouse_active)
 						mouse_active = SDL_TRUE;
 					break;
