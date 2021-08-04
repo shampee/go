@@ -1,10 +1,5 @@
 #include "main.h"
 
-enum { EMPTY,
-	   BLACK,
-	   WHITE,
-	   OOB };
-
 int main(int argc, char* argv[])
 {
 	memset(&app, 0, sizeof(App));
@@ -18,38 +13,12 @@ int main(int argc, char* argv[])
 	int grid_size	   = play_size + 1;
 	int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
 
-	Cell* cell_array[grid_size + 1][grid_size + 1];
-
 	int row = 0;
 	int col = 0;
 	int x	= 0;
 	int y	= 0;
 
-	while (row <= grid_size)
-	{
-		cell_array[row][col] = cell_create();
-
-		if (row == 0 || row == grid_size || col == 0 || col == grid_size)
-			cell_array[row][col]->cell_value = OOB;
-		else
-			cell_array[row][col]->cell_value = EMPTY;
-
-		cell_array[row][col]->dims.w = grid_cell_size;
-		cell_array[row][col]->dims.h = grid_cell_size;
-		cell_array[row][col]->dims.x = x;
-		cell_array[row][col]->dims.y = y;
-
-		x += grid_cell_size;
-		col++;
-
-		if (col > grid_size)
-		{
-			col = 0;
-			x	= 0;
-			row++;
-			y += grid_cell_size;
-		}
-	}
+	init_board(play_size);
 
 	// The cursor ghost is a cursor that always shows in the cell below the mouse cursor.
 	Cell* grid_cursor_ghost;
@@ -87,7 +56,7 @@ int main(int argc, char* argv[])
 	SDL_Texture* reset_button_text;
 	reset_button_text = get_text(" Reset Board ", "times-new-roman.ttf", 40, black, app.renderer);
 
-	// dimensions for button and its background for resetting board
+	// dimensions for reset board button
 	SDL_Rect reset_board_b;
 	reset_board_b.w = grid_cell_size * 4;
 	reset_board_b.h = grid_cell_size;

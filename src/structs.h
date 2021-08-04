@@ -4,6 +4,7 @@ typedef struct
 	SDL_Window*	  window;
 } App;
 
+App app;
 typedef struct
 {
 	SDL_Rect dims;
