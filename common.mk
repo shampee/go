@@ -6,7 +6,6 @@ vpath %.h $(SEARCHPATH)
 
 DEPS += defs.h structs.h
 
-_OBJS += init.o
 _OBJS += main.o
 
 OBJS = $(patsubst %,$(OUT)/%,$(_OBJS))
