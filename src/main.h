@@ -108,10 +108,11 @@ void init_board(int play_size)
 		else
 			cell_array[row][col]->cell_value = EMPTY;
 
-		cell_array[row][col]->dims.w = grid_cell_size;
-		cell_array[row][col]->dims.h = grid_cell_size;
-		cell_array[row][col]->dims.x = x;
-		cell_array[row][col]->dims.y = y;
+		cell_array[row][col]->dims.w	 = grid_cell_size;
+		cell_array[row][col]->dims.h	 = grid_cell_size;
+		cell_array[row][col]->dims.x	 = x;
+		cell_array[row][col]->dims.y	 = y;
+		cell_array[row][col]->scan_count = 0;
 
 		x += grid_cell_size;
 		col++;
@@ -129,6 +130,12 @@ void init_board(int play_size)
 	grid_cursor_ghost->cell_value = OOB;
 }
 
+int	  liberties = 0;
+Cell* cells_scanned[MAXGRIDSIZE * MAXGRIDSIZE];
+int	  count = 0;
+
+void scan_group_for_liberties(int enemy_color, int row, int col);
+
 void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 {
 	int row			   = 0;
@@ -143,7 +150,32 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 			if (cell_array[row][col]->cell_value == EMPTY)
 			{
 				if (turn == BLACK)
+				{
 					cell_array[row][col]->cell_value = BLACK;
+					if (cell_array[row - 1][col]->cell_value == WHITE)
+					{
+						cell_array[row - 1][col]->scan_count++;
+						cells_scanned[++count] = cell_array[row - 1][col];
+						scan_group_for_liberties(WHITE, row - 1, col);
+
+						if (liberties == 0)
+						{
+							while (count > 0)
+							{
+								cells_scanned[count]->cell_value = EMPTY;
+								cells_scanned[count]->scan_count = 0;
+								--count;
+							}
+						}
+						else if (liberties != 0)
+						{
+							while (count > 0)
+								cells_scanned[count--]->scan_count = 0;
+							liberties = 0;
+						}
+					}
+				}
+
 				else if (turn == WHITE)
 					cell_array[row][col]->cell_value = WHITE;
 			}
@@ -159,6 +191,56 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 	}
 }
 
+void scan_group_for_liberties(int enemy_color, int row, int col)
+{
+	if (cell_array[row - 1][col]->cell_value == enemy_color)
+	{
+		cell_array[row - 1][col]->scan_count++;
+		if (cell_array[row - 1][col]->scan_count == 1)
+		{
+			cells_scanned[++count] = cell_array[row - 1][col];
+			scan_group_for_liberties(enemy_color, row - 1, col);
+		}
+	}
+	else if (cell_array[row - 1][col]->cell_value == EMPTY)
+		++liberties;
+
+	if (cell_array[row][col + 1]->cell_value == enemy_color)
+	{
+		cell_array[row][col + 1]->scan_count++;
+		if (cell_array[row][col + 1]->scan_count == 1)
+		{
+			cells_scanned[++count] = cell_array[row][col + 1];
+			scan_group_for_liberties(enemy_color, row, col + 1);
+		}
+	}
+	else if (cell_array[row][col + 1]->cell_value == EMPTY)
+		++liberties;
+
+	if (cell_array[row + 1][col]->cell_value == enemy_color)
+	{
+		cell_array[row + 1][col]->scan_count++;
+		if (cell_array[row + 1][col]->scan_count == 1)
+		{
+			cells_scanned[++count] = cell_array[row + 1][col];
+			scan_group_for_liberties(enemy_color, row + 1, col);
+		}
+	}
+	else if (cell_array[row + 1][col]->cell_value == EMPTY)
+		++liberties;
+
+	if (cell_array[row][col - 1]->cell_value == enemy_color)
+	{
+		cell_array[row][col - 1]->scan_count++;
+		if (cell_array[row][col - 1]->scan_count == 1)
+		{
+			cells_scanned[++count] = cell_array[row][col - 1];
+			scan_group_for_liberties(enemy_color, row, col - 1);
+		}
+	}
+	else if (cell_array[row][col - 1]->cell_value == EMPTY)
+		++liberties;
+}
 void reset_board(int play_size)
 {
 	int row		  = 0;
@@ -169,6 +251,7 @@ void reset_board(int play_size)
 	{
 		if (cell_array[row][col]->cell_value == BLACK || cell_array[row][col]->cell_value == WHITE)
 			cell_array[row][col]->cell_value = EMPTY;
+		cell_array[row][col]->scan_count = 0;
 		col++;
 		if (col > grid_size)
 		{
