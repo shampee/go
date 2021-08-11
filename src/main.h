@@ -4,7 +4,9 @@ enum { EMPTY,
 	   BLACK,
 	   WHITE,
 	   OOB,
-	   OK };
+	   OK,
+	   YES,
+	   NO };
 
 #define MAXGRIDSIZE 21
 Cell* cell_array[MAXGRIDSIZE][MAXGRIDSIZE];
@@ -133,11 +135,15 @@ void init_board(int play_size)
 
 int	  liberties = 0;
 Cell* cells_scanned[MAXGRIDSIZE * MAXGRIDSIZE];
-int	  count			= 0;
-Cell* ko_rule_black = NULL;
-Cell* ko_rule_white = NULL;
+Cell* stones_captured[MAXGRIDSIZE * MAXGRIDSIZE];
+int	  count				= 0;
+int	  capcount			= 0;
+Cell* ko_rule_black		= NULL;
+Cell* ko_rule_white		= NULL;
+int	  stones_to_capture = NO;
 
 void init_scan_enemy(int enemy_color, int row, int col);
+void capture_stones(void);
 int	 init_suicide_scan(int own_color, int row, int col);
 void scan_group_for_liberties(int enemy_color, int row, int col);
 
@@ -156,11 +162,6 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 			{
 				if (turn == BLACK)
 				{
-					if (ko_rule_black == cell_array[row][col])
-					{
-						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n");
-						return;
-					}
 					cell_array[row][col]->cell_value = BLACK;
 
 					init_scan_enemy(WHITE, row - 1, col); // scans the enemy group (if there is one) for liberties directly above the placed black stone
@@ -168,23 +169,38 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 					init_scan_enemy(WHITE, row + 1, col); // scans the enemy group directly below the placed black stone
 					init_scan_enemy(WHITE, row, col - 1); // scans the enemy group directly to the left of the placed black stone
 
+					if (stones_to_capture == YES && ko_rule_black == cell_array[row][col])
+					{
+						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n");
+						cell_array[row][col]->cell_value = EMPTY;
+						capcount						 = 0;
+						return;
+					}
+
+					capture_stones();
+
 					if (init_suicide_scan(BLACK, row, col) == OK)
 						ko_rule_black = cell_array[row][col];
 				}
 
 				else if (turn == WHITE)
 				{
-					if (ko_rule_white == cell_array[row][col])
-					{
-						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n");
-						return;
-					}
 					cell_array[row][col]->cell_value = WHITE;
 
 					init_scan_enemy(BLACK, row - 1, col);
 					init_scan_enemy(BLACK, row, col + 1);
 					init_scan_enemy(BLACK, row + 1, col);
 					init_scan_enemy(BLACK, row, col - 1);
+
+					if (stones_to_capture == YES && ko_rule_white == cell_array[row][col])
+					{
+						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n");
+						cell_array[row][col]->cell_value = EMPTY;
+						capcount						 = 0;
+						return;
+					}
+
+					capture_stones();
 
 					if (init_suicide_scan(WHITE, row, col) == OK)
 						ko_rule_white = cell_array[row][col];
@@ -219,10 +235,10 @@ void init_scan_enemy(int enemy_color, int row, int col)
 		{
 			while (count > 0)
 			{
-				cells_scanned[count]->cell_value = EMPTY;
-				cells_scanned[count]->scan_count = 0;
+				stones_captured[++capcount] = cells_scanned[count];
 				--count;
 			}
+			stones_to_capture = YES;
 		}
 		else if (liberties != 0)
 		{
@@ -231,6 +247,17 @@ void init_scan_enemy(int enemy_color, int row, int col)
 			liberties = 0;
 		}
 	}
+}
+
+void capture_stones(void)
+{
+	while (capcount > 0)
+	{
+		stones_captured[capcount]->cell_value = EMPTY;
+		stones_captured[capcount]->scan_count = 0;
+		--capcount;
+	}
+	stones_to_capture = NO;
 }
 
 int init_suicide_scan(int own_color, int row, int col)
