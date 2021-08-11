@@ -163,6 +163,7 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 				if (turn == BLACK)
 				{
 					cell_array[row][col]->cell_value = BLACK;
+					stones_to_capture				 = NO;
 
 					init_scan_enemy(WHITE, row - 1, col); // scans the enemy group (if there is one) for liberties directly above the placed black stone
 					init_scan_enemy(WHITE, row, col + 1); // scans the enemy group directly to the right of the placed black stone
@@ -186,6 +187,7 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 				else if (turn == WHITE)
 				{
 					cell_array[row][col]->cell_value = WHITE;
+					stones_to_capture				 = NO;
 
 					init_scan_enemy(BLACK, row - 1, col);
 					init_scan_enemy(BLACK, row, col + 1);
@@ -257,7 +259,6 @@ void capture_stones(void)
 		stones_captured[capcount]->scan_count = 0;
 		--capcount;
 	}
-	stones_to_capture = NO;
 }
 
 int init_suicide_scan(int own_color, int row, int col)
