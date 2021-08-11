@@ -3,7 +3,8 @@
 enum { EMPTY,
 	   BLACK,
 	   WHITE,
-	   OOB };
+	   OOB,
+	   OK };
 
 #define MAXGRIDSIZE 21
 Cell* cell_array[MAXGRIDSIZE][MAXGRIDSIZE];
@@ -132,9 +133,12 @@ void init_board(int play_size)
 
 int	  liberties = 0;
 Cell* cells_scanned[MAXGRIDSIZE * MAXGRIDSIZE];
-int	  count = 0;
+int	  count			= 0;
+Cell* ko_rule_black = NULL;
+Cell* ko_rule_white = NULL;
 
-void init_scan(int enemy_color, int row, int col);
+void init_scan_enemy(int enemy_color, int row, int col);
+int	 init_suicide_scan(int own_color, int row, int col);
 void scan_group_for_liberties(int enemy_color, int row, int col);
 
 void left_click_on_board(int play_size, int cursor_x, int cursor_y)
@@ -152,20 +156,38 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 			{
 				if (turn == BLACK)
 				{
+					if (ko_rule_black == cell_array[row][col])
+					{
+						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n");
+						return;
+					}
 					cell_array[row][col]->cell_value = BLACK;
-					init_scan(WHITE, row - 1, col); // scans the enemy group (if there is one) for liberties directly above the placed black stone
-					init_scan(WHITE, row, col + 1); // scans the enemy group directly to the right of the placed black stone
-					init_scan(WHITE, row + 1, col); // scans the enemy group directly below the placed black stone
-					init_scan(WHITE, row, col - 1); // scans the enemy group directly to the left of the placed black stone
+
+					init_scan_enemy(WHITE, row - 1, col); // scans the enemy group (if there is one) for liberties directly above the placed black stone
+					init_scan_enemy(WHITE, row, col + 1); // scans the enemy group directly to the right of the placed black stone
+					init_scan_enemy(WHITE, row + 1, col); // scans the enemy group directly below the placed black stone
+					init_scan_enemy(WHITE, row, col - 1); // scans the enemy group directly to the left of the placed black stone
+
+					if (init_suicide_scan(BLACK, row, col) == OK)
+						ko_rule_black = cell_array[row][col];
 				}
 
 				else if (turn == WHITE)
 				{
+					if (ko_rule_white == cell_array[row][col])
+					{
+						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n");
+						return;
+					}
 					cell_array[row][col]->cell_value = WHITE;
-					init_scan(BLACK, row - 1, col);
-					init_scan(BLACK, row, col + 1);
-					init_scan(BLACK, row + 1, col);
-					init_scan(BLACK, row, col - 1);
+
+					init_scan_enemy(BLACK, row - 1, col);
+					init_scan_enemy(BLACK, row, col + 1);
+					init_scan_enemy(BLACK, row + 1, col);
+					init_scan_enemy(BLACK, row, col - 1);
+
+					if (init_suicide_scan(WHITE, row, col) == OK)
+						ko_rule_white = cell_array[row][col];
 				}
 			}
 			break;
@@ -180,12 +202,12 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 	}
 }
 
-/*	init_scan: the first stone needs to be scanned before scan_group_for_liberties scans all of the stones of the same color that are connected to the first stone,
+/*	init_scan_enemy: the first stone needs to be scanned before scan_group_for_liberties scans all of the stones of the same color that are connected to the first stone,
 	the address of all cells of the stones in the group are stored in the cells_scanned array, which will later be used to remove (if no liberties are found) the
 	stones off of the board, by changing the cell value of each cell to EMPTY
 */
 
-void init_scan(int enemy_color, int row, int col)
+void init_scan_enemy(int enemy_color, int row, int col)
 {
 	if (cell_array[row][col]->cell_value == enemy_color)
 	{
@@ -211,55 +233,76 @@ void init_scan(int enemy_color, int row, int col)
 	}
 }
 
-/*	scan_group_for_liberties: this rescursively scans all stones of the same color that are connected to the stone that was first scanned in init_scan, it will only store a cell
+int init_suicide_scan(int own_color, int row, int col)
+{
+	scan_group_for_liberties(own_color, row, col);
+
+	if (liberties == 0)
+	{
+		cell_array[row][col]->cell_value = EMPTY;
+		printf("Rule: You can not reduce your own group of stones liberties to 0, or otherwise place a stone where there are no liberties for it\n");
+		while (count > 0)
+			cells_scanned[count--]->scan_count = 0;
+		return !OK;
+	}
+	else
+	{
+		while (count > 0)
+			cells_scanned[count--]->scan_count = 0;
+		liberties = 0;
+		return OK;
+	}
+}
+
+/*	scan_group_for_liberties: this rescursively scans all stones of the same color that are connected to the stone that was first scanned in init_scan_enemy, it will only store a cell
 	in the cells_scanned array if it is the first time scanning the cell, this is kept track of by incrementing the scan_count in the cell every time it is scanned
 */
 
-void scan_group_for_liberties(int enemy_color, int row, int col)
+void scan_group_for_liberties(int target_color, int row, int col)
 {
-	if (cell_array[row - 1][col]->cell_value == enemy_color)
+	if (cell_array[row - 1][col]->cell_value == target_color)
 	{
 		cell_array[row - 1][col]->scan_count++;
 		if (cell_array[row - 1][col]->scan_count == 1)
 		{
 			cells_scanned[++count] = cell_array[row - 1][col];
-			scan_group_for_liberties(enemy_color, row - 1, col);
+			scan_group_for_liberties(target_color, row - 1, col);
 		}
 	}
 	else if (cell_array[row - 1][col]->cell_value == EMPTY)
 		++liberties;
 
-	if (cell_array[row][col + 1]->cell_value == enemy_color)
+	if (cell_array[row][col + 1]->cell_value == target_color)
 	{
 		cell_array[row][col + 1]->scan_count++;
 		if (cell_array[row][col + 1]->scan_count == 1)
 		{
 			cells_scanned[++count] = cell_array[row][col + 1];
-			scan_group_for_liberties(enemy_color, row, col + 1);
+			scan_group_for_liberties(target_color, row, col + 1);
 		}
 	}
 	else if (cell_array[row][col + 1]->cell_value == EMPTY)
 		++liberties;
 
-	if (cell_array[row + 1][col]->cell_value == enemy_color)
+	if (cell_array[row + 1][col]->cell_value == target_color)
 	{
 		cell_array[row + 1][col]->scan_count++;
 		if (cell_array[row + 1][col]->scan_count == 1)
 		{
 			cells_scanned[++count] = cell_array[row + 1][col];
-			scan_group_for_liberties(enemy_color, row + 1, col);
+			scan_group_for_liberties(target_color, row + 1, col);
 		}
 	}
 	else if (cell_array[row + 1][col]->cell_value == EMPTY)
 		++liberties;
 
-	if (cell_array[row][col - 1]->cell_value == enemy_color)
+	if (cell_array[row][col - 1]->cell_value == target_color)
 	{
 		cell_array[row][col - 1]->scan_count++;
 		if (cell_array[row][col - 1]->scan_count == 1)
 		{
 			cells_scanned[++count] = cell_array[row][col - 1];
-			scan_group_for_liberties(enemy_color, row, col - 1);
+			scan_group_for_liberties(target_color, row, col - 1);
 		}
 	}
 	else if (cell_array[row][col - 1]->cell_value == EMPTY)
@@ -284,6 +327,8 @@ void reset_board(int play_size)
 			row++;
 		}
 	}
+	ko_rule_black = NULL;
+	ko_rule_white = NULL;
 }
 
 void mouse_over_board(int play_size, int cursor_x, int cursor_y)
