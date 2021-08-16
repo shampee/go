@@ -146,6 +146,8 @@ void init_scan_enemy(int enemy_color, int row, int col);
 void capture_stones(void);
 int	 init_suicide_scan(int own_color, int row, int col);
 void scan_group_for_liberties(int enemy_color, int row, int col);
+void get_score_black(void);
+void get_score_white(void);
 
 void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 {
@@ -172,13 +174,14 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 
 					if (stones_to_capture == YES && ko_rule_black == cell_array[row][col])
 					{
-						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n");
+						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
 						cell_array[row][col]->cell_value = EMPTY;
 						capcount						 = 0;
 						return;
 					}
 
 					capture_stones();
+					get_score_black();
 
 					if (init_suicide_scan(BLACK, row, col) == OK)
 						ko_rule_black = cell_array[row][col];
@@ -196,13 +199,14 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 
 					if (stones_to_capture == YES && ko_rule_white == cell_array[row][col])
 					{
-						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n");
+						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
 						cell_array[row][col]->cell_value = EMPTY;
 						capcount						 = 0;
 						return;
 					}
 
 					capture_stones();
+					get_score_white();
 
 					if (init_suicide_scan(WHITE, row, col) == OK)
 						ko_rule_white = cell_array[row][col];
@@ -227,7 +231,7 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 
 void init_scan_enemy(int enemy_color, int row, int col)
 {
-	if (cell_array[row][col]->cell_value == enemy_color)
+	if (cell_array[row][col]->cell_value == enemy_color && cell_array[row][col]->scan_count == 0)
 	{
 		cell_array[row][col]->scan_count++;
 		cells_scanned[++count] = cell_array[row][col];
@@ -248,37 +252,6 @@ void init_scan_enemy(int enemy_color, int row, int col)
 				cells_scanned[count--]->scan_count = 0;
 			liberties = 0;
 		}
-	}
-}
-
-void capture_stones(void)
-{
-	while (capcount > 0)
-	{
-		stones_captured[capcount]->cell_value = EMPTY;
-		stones_captured[capcount]->scan_count = 0;
-		--capcount;
-	}
-}
-
-int init_suicide_scan(int own_color, int row, int col)
-{
-	scan_group_for_liberties(own_color, row, col);
-
-	if (liberties == 0)
-	{
-		cell_array[row][col]->cell_value = EMPTY;
-		printf("Rule: You can not reduce your own group of stones liberties to 0, or otherwise place a stone where there are no liberties for it\n");
-		while (count > 0)
-			cells_scanned[count--]->scan_count = 0;
-		return !OK;
-	}
-	else
-	{
-		while (count > 0)
-			cells_scanned[count--]->scan_count = 0;
-		liberties = 0;
-		return OK;
 	}
 }
 
@@ -335,6 +308,65 @@ void scan_group_for_liberties(int target_color, int row, int col)
 	}
 	else if (cell_array[row][col - 1]->cell_value == EMPTY)
 		++liberties;
+}
+
+// score for capturing stones
+int black_score = 0;
+int white_score = 0;
+
+void capture_stones(void)
+{
+	if (turn == BLACK)
+		black_score += capcount;
+	else if (turn == WHITE)
+		white_score += capcount;
+	while (capcount > 0)
+	{
+		stones_captured[capcount]->cell_value = EMPTY;
+		stones_captured[capcount]->scan_count = 0;
+		--capcount;
+	}
+}
+
+// Variables for keeping score
+SDL_Texture* black_sc_texture;
+SDL_Texture* white_sc_texture;
+char		 black_sc_str[10];
+char		 white_sc_str[10];
+SDL_Color	 black = { 0, 0, 0, 255 };
+SDL_Color	 white = { 255, 255, 255, 0 };
+
+void get_score_black(void)
+{
+	sprintf(black_sc_str, " %d ", black_score);
+	black_sc_texture = get_text(black_sc_str, "times-new-roman.ttf", 50, black, app.renderer);
+}
+
+void get_score_white(void)
+{
+	sprintf(white_sc_str, " %d ", white_score);
+	white_sc_texture = get_text(white_sc_str, "times-new-roman.ttf", 50, black, app.renderer);
+}
+
+int init_suicide_scan(int own_color, int row, int col)
+{
+	scan_group_for_liberties(own_color, row, col);
+
+	if (liberties == 0)
+	{
+		cell_array[row][col]->cell_value = EMPTY;
+		printf("Rule: You can not reduce your own group of stones liberties to 0, or otherwise place a stone where there are no liberties for it\n\n");
+		while (count > 0)
+			cells_scanned[count--]->scan_count = 0;
+		return !OK;
+	}
+	else
+	{
+		while (count > 0)
+			cells_scanned[count--]->scan_count = 0;
+		liberties = 0;
+		return OK;
+	}
 }
 
 void reset_board(int play_size)

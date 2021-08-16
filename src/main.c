@@ -49,6 +49,23 @@ int main(int argc, char* argv[])
 	SDL_Texture* reset_button_text;
 	reset_button_text = get_text(" Reset Board ", "times-new-roman.ttf", 40, black, app.renderer);
 
+	// cells to show score for black and white
+	SDL_Rect black_sc_rect;
+	SDL_Rect white_sc_rect;
+
+	black_sc_rect.w = grid_cell_size;
+	black_sc_rect.h = grid_cell_size;
+	black_sc_rect.x = (blackb.x + grid_cell_size * 2);
+	black_sc_rect.y = (blackb.y);
+
+	white_sc_rect.w = grid_cell_size;
+	white_sc_rect.h = grid_cell_size;
+	white_sc_rect.x = (whiteb.x + grid_cell_size * 2);
+	white_sc_rect.y = (whiteb.y);
+
+	get_score_black();
+	get_score_white();
+
 	// dimensions for reset board button
 	SDL_Rect reset_board_b;
 	reset_board_b.w = grid_cell_size * 4;
@@ -150,6 +167,11 @@ int main(int argc, char* argv[])
 				row++;
 			}
 		}
+
+		// draw score for black and white
+
+		SDL_RenderCopy(app.renderer, black_sc_texture, NULL, &black_sc_rect);
+		SDL_RenderCopy(app.renderer, white_sc_texture, NULL, &white_sc_rect);
 
 		SDL_RenderPresent(app.renderer);
 	}
