@@ -63,8 +63,8 @@ int main(int argc, char* argv[])
 	white_sc_rect.x = (whiteb.x + grid_cell_size * 2);
 	white_sc_rect.y = (whiteb.y);
 
-	get_score_black();
-	get_score_white();
+	get_score_text_black();
+	get_score_text_white();
 
 	// dimensions for reset board button
 	SDL_Rect reset_board_b;
@@ -72,6 +72,27 @@ int main(int argc, char* argv[])
 	reset_board_b.h = grid_cell_size;
 	reset_board_b.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 6));
 	reset_board_b.y = (SCREEN_HEIGHT / (grid_size + 1)) * 7;
+
+	// create textures for co ordinates on edges of board - alphabetical
+	SDL_Texture* texture_array_alpha[grid_size];
+	char		 alphabet_char = 'A';
+	char		 alphabet_char_string[5];
+	int			 i;
+	for (i = 0; i < play_size; alphabet_char++, i++)
+	{
+		sprintf(alphabet_char_string, " %c ", alphabet_char);
+		texture_array_alpha[i] = get_text(alphabet_char_string, "times-new-roman.ttf", 50, black, app.renderer);
+	}
+
+	// create textures for co ordinates on edges of board - numerical
+	SDL_Texture* texture_array_num[grid_size];
+	int			 num_char = play_size;
+	char		 num_char_str[5];
+	for (i = 0; i < play_size; num_char--, i++)
+	{
+		sprintf(num_char_str, " %d ", num_char);
+		texture_array_num[i] = get_text(num_char_str, "times-new-roman.ttf", 50, black, app.renderer);
+	}
 
 	SDL_bool quit		  = SDL_FALSE;
 	SDL_bool mouse_active = SDL_FALSE;
@@ -135,6 +156,19 @@ int main(int argc, char* argv[])
 		{
 			SDL_RenderDrawLine(app.renderer, grid_cell_size * 1.5, y, (grid_cell_size * grid_size) - (grid_cell_size / 2), y);
 		}
+
+		// Draw co ordinates
+		for (row = 0, col = 1, i = 0; i < play_size; col++, i++)
+			SDL_RenderCopy(app.renderer, texture_array_alpha[i], NULL, &cell_array[row][col]->dims);
+
+		for (row = grid_size, col = 1, i = 0; i < play_size; col++, i++)
+			SDL_RenderCopy(app.renderer, texture_array_alpha[i], NULL, &cell_array[row][col]->dims);
+
+		for (row = 1, col = 0, i = 0; i < play_size; row++, i++)
+			SDL_RenderCopy(app.renderer, texture_array_num[i], NULL, &cell_array[row][col]->dims);
+
+		for (row = 1, col = grid_size, i = 0; i < play_size; row++, i++)
+			SDL_RenderCopy(app.renderer, texture_array_num[i], NULL, &cell_array[row][col]->dims);
 
 		// Draw white and black buttons
 		SDL_RenderCopy(app.renderer, black_stone, NULL, &blackb);

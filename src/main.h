@@ -146,8 +146,8 @@ void init_scan_enemy(int enemy_color, int row, int col);
 void capture_stones(void);
 int	 init_suicide_scan(int own_color, int row, int col);
 void scan_group_for_liberties(int enemy_color, int row, int col);
-void get_score_black(void);
-void get_score_white(void);
+void get_score_text_black(void);
+void get_score_text_white(void);
 
 void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 {
@@ -176,12 +176,13 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 					{
 						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
 						cell_array[row][col]->cell_value = EMPTY;
-						capcount						 = 0;
+						while (capcount > 0)
+							stones_captured[capcount--]->scan_count = 0;
 						return;
 					}
 
 					capture_stones();
-					get_score_black();
+					get_score_text_black();
 
 					if (init_suicide_scan(BLACK, row, col) == OK)
 						ko_rule_black = cell_array[row][col];
@@ -201,12 +202,13 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 					{
 						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
 						cell_array[row][col]->cell_value = EMPTY;
-						capcount						 = 0;
+						while (capcount > 0)
+							stones_captured[capcount--]->scan_count = 0;
 						return;
 					}
 
 					capture_stones();
-					get_score_white();
+					get_score_text_white();
 
 					if (init_suicide_scan(WHITE, row, col) == OK)
 						ko_rule_white = cell_array[row][col];
@@ -235,15 +237,13 @@ void init_scan_enemy(int enemy_color, int row, int col)
 	{
 		cell_array[row][col]->scan_count++;
 		cells_scanned[++count] = cell_array[row][col];
+
 		scan_group_for_liberties(enemy_color, row, col);
 
 		if (liberties == 0)
 		{
 			while (count > 0)
-			{
-				stones_captured[++capcount] = cells_scanned[count];
-				--count;
-			}
+				stones_captured[++capcount] = cells_scanned[count--];
 			stones_to_capture = YES;
 		}
 		else if (liberties != 0)
@@ -336,13 +336,13 @@ char		 white_sc_str[10];
 SDL_Color	 black = { 0, 0, 0, 255 };
 SDL_Color	 white = { 255, 255, 255, 0 };
 
-void get_score_black(void)
+void get_score_text_black(void)
 {
 	sprintf(black_sc_str, " %d ", black_score);
 	black_sc_texture = get_text(black_sc_str, "times-new-roman.ttf", 50, black, app.renderer);
 }
 
-void get_score_white(void)
+void get_score_text_white(void)
 {
 	sprintf(white_sc_str, " %d ", white_score);
 	white_sc_texture = get_text(white_sc_str, "times-new-roman.ttf", 50, black, app.renderer);
