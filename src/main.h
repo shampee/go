@@ -144,7 +144,7 @@ int	  stones_to_capture = NO;
 
 void init_scan_enemy(int enemy_color, int row, int col);
 void capture_stones(void);
-int	 init_suicide_scan(int own_color, int row, int col);
+int	 check_for_suicide(int own_color, int row, int col);
 void scan_group_for_liberties(int enemy_color, int row, int col);
 void get_score_text_black(void);
 void get_score_text_white(void);
@@ -172,6 +172,7 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 					init_scan_enemy(WHITE, row + 1, col); // scans the enemy group directly below the placed black stone
 					init_scan_enemy(WHITE, row, col - 1); // scans the enemy group directly to the left of the placed black stone
 
+					// Check for Ko
 					if (stones_to_capture == YES && ko_rule_black == cell_array[row][col])
 					{
 						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
@@ -184,7 +185,7 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 					capture_stones();
 					get_score_text_black();
 
-					if (init_suicide_scan(BLACK, row, col) == OK)
+					if (check_for_suicide(BLACK, row, col) == OK)
 						ko_rule_black = cell_array[row][col];
 				}
 
@@ -198,6 +199,7 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 					init_scan_enemy(BLACK, row + 1, col);
 					init_scan_enemy(BLACK, row, col - 1);
 
+					// Check for Ko
 					if (stones_to_capture == YES && ko_rule_white == cell_array[row][col])
 					{
 						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
@@ -210,7 +212,7 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 					capture_stones();
 					get_score_text_white();
 
-					if (init_suicide_scan(WHITE, row, col) == OK)
+					if (check_for_suicide(WHITE, row, col) == OK)
 						ko_rule_white = cell_array[row][col];
 				}
 			}
@@ -348,7 +350,7 @@ void get_score_text_white(void)
 	white_sc_texture = get_text(white_sc_str, "times-new-roman.ttf", 50, black, app.renderer);
 }
 
-int init_suicide_scan(int own_color, int row, int col)
+int check_for_suicide(int own_color, int row, int col)
 {
 	scan_group_for_liberties(own_color, row, col);
 
