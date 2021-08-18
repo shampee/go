@@ -94,6 +94,10 @@ int main(int argc, char* argv[])
 		texture_array_num[i] = get_text(num_char_str, "times-new-roman.ttf", 50, black, app.renderer);
 	}
 
+	// load image for dot
+	SDL_Texture* dot_image;
+	dot_image = get_image("dot.png", app.renderer);
+
 	SDL_bool quit		  = SDL_FALSE;
 	SDL_bool mouse_active = SDL_FALSE;
 	SDL_bool mouse_hover  = SDL_FALSE;
@@ -155,6 +159,40 @@ int main(int argc, char* argv[])
 		for (int y = grid_cell_size * 1.5; y < 1 + grid_cell_size * grid_size + 1; y += grid_cell_size)
 		{
 			SDL_RenderDrawLine(app.renderer, grid_cell_size * 1.5, y, (grid_cell_size * grid_size) - (grid_cell_size / 2), y);
+		}
+
+		// Draw dots on board
+		if (play_size == 9)
+		{
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[3][3]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[3][7]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[5][5]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[7][3]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[7][7]->dims);
+		}
+
+		else if (play_size == 13)
+		{
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[4][4]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[4][10]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[7][7]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[10][4]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[10][10]->dims);
+		}
+
+		else if (play_size == 19)
+		{
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[4][4]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[4][10]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[4][16]->dims);
+
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[10][4]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[10][10]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[10][16]->dims);
+
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[16][4]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[16][10]->dims);
+			SDL_RenderCopy(app.renderer, dot_image, NULL, &cell_array[16][16]->dims);
 		}
 
 		// Draw co ordinates
