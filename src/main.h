@@ -8,12 +8,8 @@ enum { EMPTY,
 	   YES,
 	   NO };
 
-#define MAXGRIDSIZE 21
 Cell* cell_array[MAXGRIDSIZE][MAXGRIDSIZE];
 Cell* grid_cursor_ghost;
-
-// variable that tracks whose turn it is
-int turn = BLACK;
 
 void init_sdl(void)
 {
@@ -133,23 +129,14 @@ void init_board(int play_size)
 	grid_cursor_ghost->cell_value = OOB;
 }
 
-int	  liberties = 0;
-Cell* cells_scanned[MAXGRIDSIZE * MAXGRIDSIZE];
-Cell* stones_captured[MAXGRIDSIZE * MAXGRIDSIZE];
-int	  count				= 0;
-int	  capcount			= 0;
-Cell* ko_rule_black		= NULL;
-Cell* ko_rule_white		= NULL;
-int	  stones_to_capture = NO;
-
-void init_scan_enemy(int enemy_color, int row, int col);
-void capture_stones(void);
-int	 check_for_suicide(int own_color, int row, int col);
-void scan_group_for_liberties(int enemy_color, int row, int col);
+void init_scan_enemy(GameState* gs, int enemy_color, int row, int col);
+void capture_stones(GameState* gs);
+int	 check_for_suicide(GameState* gs, int own_color, int row, int col);
+void scan_group_for_liberties(GameState* gs, int enemy_color, int row, int col);
 void get_score_text_black(void);
 void get_score_text_white(void);
 
-void left_click_on_board(int play_size, int cursor_x, int cursor_y)
+void left_click_on_board(GameState* gs, int play_size, int cursor_x, int cursor_y)
 {
 	int row			   = 0;
 	int col			   = 0;
@@ -162,58 +149,58 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 		{
 			if (cell_array[row][col]->cell_value == EMPTY)
 			{
-				if (turn == BLACK)
+				if (gs->turn == BLACK)
 				{
 					cell_array[row][col]->cell_value = BLACK;
-					stones_to_capture				 = NO;
+					gs->stones_to_capture			 = NO;
 
-					init_scan_enemy(WHITE, row - 1, col); // scans the enemy group (if there is one) for liberties directly above the placed black stone
-					init_scan_enemy(WHITE, row, col + 1); // scans the enemy group directly to the right of the placed black stone
-					init_scan_enemy(WHITE, row + 1, col); // scans the enemy group directly below the placed black stone
-					init_scan_enemy(WHITE, row, col - 1); // scans the enemy group directly to the left of the placed black stone
+					init_scan_enemy(gs, WHITE, row - 1, col); // scans the enemy group (if there is one) for liberties directly above the placed black stone
+					init_scan_enemy(gs, WHITE, row, col + 1); // scans the enemy group directly to the right of the placed black stone
+					init_scan_enemy(gs, WHITE, row + 1, col); // scans the enemy group directly below the placed black stone
+					init_scan_enemy(gs, WHITE, row, col - 1); // scans the enemy group directly to the left of the placed black stone
 
 					// Check for Ko
-					if (stones_to_capture == YES && ko_rule_black == cell_array[row][col])
+					if (gs->stones_to_capture == YES && gs->ko_rule_black == cell_array[row][col])
 					{
 						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
 						cell_array[row][col]->cell_value = EMPTY;
-						while (capcount > 0)
-							stones_captured[capcount--]->scan_count = 0;
+						while (gs->capcount > 0)
+							gs->stones_captured[gs->capcount--]->scan_count = 0;
 						return;
 					}
 
-					capture_stones();
+					capture_stones(gs);
 					get_score_text_black();
 
-					if (check_for_suicide(BLACK, row, col) == OK)
-						ko_rule_black = cell_array[row][col];
+					if (check_for_suicide(gs, BLACK, row, col) == OK)
+						gs->ko_rule_black = cell_array[row][col];
 				}
 
-				else if (turn == WHITE)
+				else if (gs->turn == WHITE)
 				{
 					cell_array[row][col]->cell_value = WHITE;
-					stones_to_capture				 = NO;
+					gs->stones_to_capture			 = NO;
 
-					init_scan_enemy(BLACK, row - 1, col);
-					init_scan_enemy(BLACK, row, col + 1);
-					init_scan_enemy(BLACK, row + 1, col);
-					init_scan_enemy(BLACK, row, col - 1);
+					init_scan_enemy(gs, BLACK, row - 1, col);
+					init_scan_enemy(gs, BLACK, row, col + 1);
+					init_scan_enemy(gs, BLACK, row + 1, col);
+					init_scan_enemy(gs, BLACK, row, col - 1);
 
 					// Check for Ko
-					if (stones_to_capture == YES && ko_rule_white == cell_array[row][col])
+					if (gs->stones_to_capture == YES && gs->ko_rule_white == cell_array[row][col])
 					{
 						printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
 						cell_array[row][col]->cell_value = EMPTY;
-						while (capcount > 0)
-							stones_captured[capcount--]->scan_count = 0;
+						while (gs->capcount > 0)
+							gs->stones_captured[gs->capcount--]->scan_count = 0;
 						return;
 					}
 
-					capture_stones();
+					capture_stones(gs);
 					get_score_text_white();
 
-					if (check_for_suicide(WHITE, row, col) == OK)
-						ko_rule_white = cell_array[row][col];
+					if (check_for_suicide(gs, WHITE, row, col) == OK)
+						gs->ko_rule_white = cell_array[row][col];
 				}
 			}
 			break;
@@ -233,26 +220,26 @@ void left_click_on_board(int play_size, int cursor_x, int cursor_y)
 	stones off of the board, by changing the cell value of each cell to EMPTY
 */
 
-void init_scan_enemy(int enemy_color, int row, int col)
+void init_scan_enemy(GameState* gs, int enemy_color, int row, int col)
 {
 	if (cell_array[row][col]->cell_value == enemy_color && cell_array[row][col]->scan_count == 0)
 	{
 		cell_array[row][col]->scan_count++;
-		cells_scanned[++count] = cell_array[row][col];
+		gs->cells_scanned[++gs->count] = cell_array[row][col];
 
-		scan_group_for_liberties(enemy_color, row, col);
+		scan_group_for_liberties(gs, enemy_color, row, col);
 
-		if (liberties == 0)
+		if (gs->liberties == 0)
 		{
-			while (count > 0)
-				stones_captured[++capcount] = cells_scanned[count--];
-			stones_to_capture = YES;
+			while (gs->count > 0)
+				gs->stones_captured[++gs->capcount] = gs->cells_scanned[gs->count--];
+			gs->stones_to_capture = YES;
 		}
-		else if (liberties != 0)
+		else if (gs->liberties != 0)
 		{
-			while (count > 0)
-				cells_scanned[count--]->scan_count = 0;
-			liberties = 0;
+			while (gs->count > 0)
+				gs->cells_scanned[gs->count--]->scan_count = 0;
+			gs->liberties = 0;
 		}
 	}
 }
@@ -261,72 +248,72 @@ void init_scan_enemy(int enemy_color, int row, int col)
 	in the cells_scanned array if it is the first time scanning the cell, this is kept track of by incrementing the scan_count in the cell every time it is scanned
 */
 
-void scan_group_for_liberties(int target_color, int row, int col)
+void scan_group_for_liberties(GameState* gs, int target_color, int row, int col)
 {
 	if (cell_array[row - 1][col]->cell_value == target_color)
 	{
 		cell_array[row - 1][col]->scan_count++;
 		if (cell_array[row - 1][col]->scan_count == 1)
 		{
-			cells_scanned[++count] = cell_array[row - 1][col];
-			scan_group_for_liberties(target_color, row - 1, col);
+			gs->cells_scanned[++gs->count] = cell_array[row - 1][col];
+			scan_group_for_liberties(gs, target_color, row - 1, col);
 		}
 	}
 	else if (cell_array[row - 1][col]->cell_value == EMPTY)
-		++liberties;
+		++gs->liberties;
 
 	if (cell_array[row][col + 1]->cell_value == target_color)
 	{
 		cell_array[row][col + 1]->scan_count++;
 		if (cell_array[row][col + 1]->scan_count == 1)
 		{
-			cells_scanned[++count] = cell_array[row][col + 1];
-			scan_group_for_liberties(target_color, row, col + 1);
+			gs->cells_scanned[++gs->count] = cell_array[row][col + 1];
+			scan_group_for_liberties(gs, target_color, row, col + 1);
 		}
 	}
 	else if (cell_array[row][col + 1]->cell_value == EMPTY)
-		++liberties;
+		++gs->liberties;
 
 	if (cell_array[row + 1][col]->cell_value == target_color)
 	{
 		cell_array[row + 1][col]->scan_count++;
 		if (cell_array[row + 1][col]->scan_count == 1)
 		{
-			cells_scanned[++count] = cell_array[row + 1][col];
-			scan_group_for_liberties(target_color, row + 1, col);
+			gs->cells_scanned[++gs->count] = cell_array[row + 1][col];
+			scan_group_for_liberties(gs, target_color, row + 1, col);
 		}
 	}
 	else if (cell_array[row + 1][col]->cell_value == EMPTY)
-		++liberties;
+		++gs->liberties;
 
 	if (cell_array[row][col - 1]->cell_value == target_color)
 	{
 		cell_array[row][col - 1]->scan_count++;
 		if (cell_array[row][col - 1]->scan_count == 1)
 		{
-			cells_scanned[++count] = cell_array[row][col - 1];
-			scan_group_for_liberties(target_color, row, col - 1);
+			gs->cells_scanned[++gs->count] = cell_array[row][col - 1];
+			scan_group_for_liberties(gs, target_color, row, col - 1);
 		}
 	}
 	else if (cell_array[row][col - 1]->cell_value == EMPTY)
-		++liberties;
+		++gs->liberties;
 }
 
 // score for capturing stones
 int black_score = 0;
 int white_score = 0;
 
-void capture_stones(void)
+void capture_stones(GameState* gs)
 {
-	if (turn == BLACK)
-		black_score += capcount;
-	else if (turn == WHITE)
-		white_score += capcount;
-	while (capcount > 0)
+	if (gs->turn == BLACK)
+		black_score += gs->capcount;
+	else if (gs->turn == WHITE)
+		white_score += gs->capcount;
+	while (gs->capcount > 0)
 	{
-		stones_captured[capcount]->cell_value = EMPTY;
-		stones_captured[capcount]->scan_count = 0;
-		--capcount;
+		gs->stones_captured[gs->capcount]->cell_value = EMPTY;
+		gs->stones_captured[gs->capcount]->scan_count = 0;
+		--gs->capcount;
 	}
 }
 
@@ -350,28 +337,28 @@ void get_score_text_white(void)
 	white_sc_texture = get_text(white_sc_str, "times-new-roman.ttf", 100, black, app.renderer);
 }
 
-int check_for_suicide(int own_color, int row, int col)
+int check_for_suicide(GameState* gs, int own_color, int row, int col)
 {
-	scan_group_for_liberties(own_color, row, col);
+	scan_group_for_liberties(gs, own_color, row, col);
 
-	if (liberties == 0)
+	if (gs->liberties == 0)
 	{
 		cell_array[row][col]->cell_value = EMPTY;
 		printf("Rule: You can not reduce your own group of stones liberties to 0, or otherwise place a stone where there are no liberties for it\n\n");
-		while (count > 0)
-			cells_scanned[count--]->scan_count = 0;
+		while (gs->count > 0)
+			gs->cells_scanned[gs->count--]->scan_count = 0;
 		return !OK;
 	}
 	else
 	{
-		while (count > 0)
-			cells_scanned[count--]->scan_count = 0;
-		liberties = 0;
+		while (gs->count > 0)
+			gs->cells_scanned[gs->count--]->scan_count = 0;
+		gs->liberties = 0;
 		return OK;
 	}
 }
 
-void reset_board(int play_size)
+void reset_board(GameState* gs, int play_size)
 {
 	int row		  = 0;
 	int col		  = 0;
@@ -389,8 +376,8 @@ void reset_board(int play_size)
 			row++;
 		}
 	}
-	ko_rule_black = NULL;
-	ko_rule_white = NULL;
+	gs->ko_rule_black = NULL;
+	gs->ko_rule_white = NULL;
 }
 
 void mouse_over_board(int play_size, int cursor_x, int cursor_y)

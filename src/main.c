@@ -7,6 +7,18 @@ int main(int argc, char* argv[])
 	init_sdl();
 	SDL_SetWindowTitle(app.window, "Go");
 
+	GameState gs = {
+		.liberties		   = 0,
+		.cells_scanned	   = { NULL },
+		.stones_captured   = { NULL },
+		.count			   = 0,
+		.capcount		   = 0,
+		.ko_rule_black	   = NULL,
+		.ko_rule_white	   = NULL,
+		.stones_to_capture = NO,
+		.turn			   = BLACK,
+	};
+
 	atexit(cleanup);
 
 	int play_size	   = 9;
@@ -118,13 +130,13 @@ int main(int argc, char* argv[])
 					break;
 				case SDL_MOUSEBUTTONDOWN:
 					if (event.motion.x > 0 && event.motion.y > 0 && event.motion.x < SCREEN_HEIGHT && event.motion.y < SCREEN_HEIGHT)
-						left_click_on_board(play_size, event.motion.x, event.motion.y);
+						left_click_on_board(&gs, play_size, event.motion.x, event.motion.y);
 					else if (event.motion.x > blackb.x && event.motion.y > blackb.y && event.motion.x < (blackb.x + blackb.w) && event.motion.y < (blackb.y + blackb.h))
-						turn = BLACK;
+						(&gs)->turn = BLACK;
 					else if (event.motion.x > whiteb.x && event.motion.y > whiteb.y && event.motion.x < (whiteb.x + whiteb.w) && event.motion.y < (whiteb.y + whiteb.h))
-						turn = WHITE;
+						(&gs)->turn = WHITE;
 					else if (event.motion.x > reset_board_b.x && event.motion.y > reset_board_b.y && event.motion.x < (reset_board_b.x + reset_board_b.w) && event.motion.y < (reset_board_b.y + reset_board_b.h))
-						reset_board(play_size);
+						reset_board(&gs, play_size);
 					break;
 				case SDL_MOUSEMOTION:
 					if (event.motion.x > 0 && event.motion.y > 0 && event.motion.x < SCREEN_HEIGHT && event.motion.y < SCREEN_HEIGHT)
