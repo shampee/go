@@ -87,7 +87,7 @@ SDL_Texture* get_text(const char* text, const char* font_path, int size, SDL_Col
 {
 	TTF_Font*	 font_and_size = TTF_OpenFont(font_path, size);
 	SDL_Surface* surface_message =
-		TTF_RenderText_Solid(font_and_size, text, color);
+		TTF_RenderText_Blended(font_and_size, text, color);
 	SDL_Texture* message_texture = SDL_CreateTextureFromSurface(app.renderer, surface_message);
 	SDL_FreeSurface(surface_message);
 	return message_texture;
@@ -341,13 +341,13 @@ SDL_Color	 white = { 255, 255, 255, 0 };
 void get_score_text_black(void)
 {
 	sprintf(black_sc_str, " %d ", black_score);
-	black_sc_texture = get_text(black_sc_str, "times-new-roman.ttf", 50, black, app.renderer);
+	black_sc_texture = get_text(black_sc_str, "times-new-roman.ttf", 100, black, app.renderer);
 }
 
 void get_score_text_white(void)
 {
 	sprintf(white_sc_str, " %d ", white_score);
-	white_sc_texture = get_text(white_sc_str, "times-new-roman.ttf", 50, black, app.renderer);
+	white_sc_texture = get_text(white_sc_str, "times-new-roman.ttf", 100, black, app.renderer);
 }
 
 int check_for_suicide(int own_color, int row, int col)

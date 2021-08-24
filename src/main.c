@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 
 	// load text for reset board button
 	SDL_Texture* reset_button_text;
-	reset_button_text = get_text(" Reset Board ", "times-new-roman.ttf", 40, black, app.renderer);
+	reset_button_text = get_text(" Reset Board ", "times-new-roman.ttf", 100, black, app.renderer);
 
 	// cells to show score for black and white
 	SDL_Rect black_sc_rect;
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 	for (i = 0; i < play_size; alphabet_char++, i++)
 	{
 		sprintf(alphabet_char_string, " %c ", alphabet_char);
-		texture_array_alpha[i] = get_text(alphabet_char_string, "times-new-roman.ttf", 50, black, app.renderer);
+		texture_array_alpha[i] = get_text(alphabet_char_string, "times-new-roman.ttf", 100, black, app.renderer);
 	}
 
 	// create textures for co ordinates on edges of board - numerical
@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
 	for (i = 0; i < play_size; num_char--, i++)
 	{
 		sprintf(num_char_str, " %d ", num_char);
-		texture_array_num[i] = get_text(num_char_str, "times-new-roman.ttf", 50, black, app.renderer);
+		texture_array_num[i] = get_text(num_char_str, "times-new-roman.ttf", 100, black, app.renderer);
 	}
 
 	// load image for dot
