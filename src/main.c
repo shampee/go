@@ -84,7 +84,7 @@ void init_board(Board* board, int play_size)
 	int col			   = 0;
 	int x			   = 0;
 	int y			   = 0;
-	int grid_size	   = play_size + 1;
+	int grid_size	   = board->play_size + 1;
 	int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
 
 	while (row <= grid_size)
@@ -116,12 +116,13 @@ void init_board(Board* board, int play_size)
 
 	board->grid_cursor_ghost			 = cell_create();
 	board->grid_cursor_ghost->cell_value = OOB;
+	board->play_size					 = play_size;
 }
-void left_click_on_board(Board* board, GameState* gs, int play_size, int cursor_x, int cursor_y)
+void left_click_on_board(Board* board, GameState* gs, int cursor_x, int cursor_y)
 {
 	int row			   = 0;
 	int col			   = 0;
-	int grid_size	   = play_size + 1;
+	int grid_size	   = board->play_size + 1;
 	int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
 
 	while (row <= grid_size)
@@ -328,11 +329,11 @@ int check_for_suicide(Board* board, GameState* gs, int own_color, int row, int c
 	}
 }
 
-void reset_board(Board* board, GameState* gs, int play_size)
+void reset_board(Board* board, GameState* gs)
 {
 	int row		  = 0;
 	int col		  = 0;
-	int grid_size = play_size + 1;
+	int grid_size = board->play_size + 1;
 
 	while (row <= grid_size)
 	{
@@ -351,11 +352,11 @@ void reset_board(Board* board, GameState* gs, int play_size)
 	gs->ko_rule_white = NULL;
 }
 
-void mouse_over_board(Board* board, int play_size, int cursor_x, int cursor_y)
+void mouse_over_board(Board* board, int cursor_x, int cursor_y)
 {
 	int row			   = 0;
 	int col			   = 0;
-	int grid_size	   = play_size + 1;
+	int grid_size	   = board->play_size + 1;
 	int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
 
 	while (row <= grid_size)
@@ -389,6 +390,7 @@ int main(int argc, char* argv[])
 	Board board = {
 		.cell_array		   = { { NULL } },
 		.grid_cursor_ghost = NULL,
+		.play_size		   = 9,
 	};
 
 	GameState gs = { .liberties			= 0,
@@ -411,14 +413,13 @@ int main(int argc, char* argv[])
 
 	atexit(cleanup);
 
-	int play_size	   = 9;
-	int grid_size	   = play_size + 1;
+	int grid_size	   = board.play_size + 1;
 	int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
 
 	int row = 0;
 	int col = 0;
 
-	init_board(&board, play_size);
+	init_board(&board, board.play_size);
 
 	// Colors
 	SDL_Color grid_background		  = { 222, 184, 135, 255 };
@@ -480,7 +481,7 @@ int main(int argc, char* argv[])
 	char		 alphabet_char = 'A';
 	char		 alphabet_char_string[5];
 	int			 i;
-	for (i = 0; i < play_size; alphabet_char++, i++)
+	for (i = 0; i < board.play_size; alphabet_char++, i++)
 	{
 		sprintf(alphabet_char_string, " %c ", alphabet_char);
 		texture_array_alpha[i] = get_text(alphabet_char_string, "fonts/times-new-roman.ttf", 100, black, app.renderer);
@@ -488,9 +489,9 @@ int main(int argc, char* argv[])
 
 	// create textures for co ordinates on edges of board - numerical
 	SDL_Texture* texture_array_num[grid_size];
-	int			 num_char = play_size;
+	int			 num_char = board.play_size;
 	char		 num_char_str[5];
-	for (i = 0; i < play_size; num_char--, i++)
+	for (i = 0; i < board.play_size; num_char--, i++)
 	{
 		sprintf(num_char_str, " %d ", num_char);
 		texture_array_num[i] = get_text(
@@ -525,7 +526,6 @@ int main(int argc, char* argv[])
 						event.motion.y < SCREEN_HEIGHT)
 						left_click_on_board(&board,
 											&gs,
-											play_size,
 											event.motion.x,
 											event.motion.y);
 					else if (event.motion.x > blackb.x &&
@@ -544,14 +544,14 @@ int main(int argc, char* argv[])
 								 (reset_board_b.x + reset_board_b.w) &&
 							 event.motion.y <
 								 (reset_board_b.y + reset_board_b.h))
-						reset_board(&board, &gs, play_size);
+						reset_board(&board, &gs);
 					break;
 				case SDL_MOUSEMOTION:
 					if (event.motion.x > 0 && event.motion.y > 0 &&
 						event.motion.x < SCREEN_HEIGHT &&
 						event.motion.y < SCREEN_HEIGHT)
 						mouse_over_board(
-							&board, play_size, event.motion.x, event.motion.y);
+							&board, event.motion.x, event.motion.y);
 					if (!mouse_active)
 						mouse_active = SDL_TRUE;
 					break;
@@ -609,7 +609,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Draw dots on board
-		if (play_size == 9)
+		if (board.play_size == 9)
 		{
 			SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[3][3]->dims);
 			SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[3][7]->dims);
@@ -618,7 +618,7 @@ int main(int argc, char* argv[])
 			SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[7][7]->dims);
 		}
 
-		else if (play_size == 13)
+		else if (board.play_size == 13)
 		{
 			SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][4]->dims);
 			SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][10]->dims);
@@ -627,7 +627,7 @@ int main(int argc, char* argv[])
 			SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[10][10]->dims);
 		}
 
-		else if (play_size == 19)
+		else if (board.play_size == 19)
 		{
 			SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][4]->dims);
 			SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][10]->dims);
@@ -643,16 +643,16 @@ int main(int argc, char* argv[])
 		}
 
 		// Draw co ordinates
-		for (row = 0, col = 1, i = 0; i < play_size; col++, i++)
+		for (row = 0, col = 1, i = 0; i < board.play_size; col++, i++)
 			SDL_RenderCopy(app.renderer, texture_array_alpha[i], NULL, &board.cell_array[row][col]->dims);
 
-		for (row = grid_size, col = 1, i = 0; i < play_size; col++, i++)
+		for (row = grid_size, col = 1, i = 0; i < board.play_size; col++, i++)
 			SDL_RenderCopy(app.renderer, texture_array_alpha[i], NULL, &board.cell_array[row][col]->dims);
 
-		for (row = 1, col = 0, i = 0; i < play_size; row++, i++)
+		for (row = 1, col = 0, i = 0; i < board.play_size; row++, i++)
 			SDL_RenderCopy(app.renderer, texture_array_num[i], NULL, &board.cell_array[row][col]->dims);
 
-		for (row = 1, col = grid_size, i = 0; i < play_size; row++, i++)
+		for (row = 1, col = grid_size, i = 0; i < board.play_size; row++, i++)
 			SDL_RenderCopy(app.renderer, texture_array_num[i], NULL, &board.cell_array[row][col]->dims);
 
 		// Draw white and black buttons

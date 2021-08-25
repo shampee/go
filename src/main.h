@@ -31,7 +31,7 @@ void get_score_text_black(GameState* gs);
 
 void get_score_text_white(GameState* gs);
 
-void left_click_on_board(Board* board, GameState* gs, int play_size, int cursor_x, int cursor_y);
+void left_click_on_board(Board* board, GameState* gs, int cursor_x, int cursor_y);
 
 void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row, int col);
 
@@ -39,6 +39,6 @@ void scan_group_for_liberties(Board* board, GameState* gs, int target_color,
 							  int row, int col);
 void get_score_text_black(GameState* gs);
 void get_score_text_white(GameState* gs);
-void reset_board(Board* board, GameState* gs, int play_size);
+void reset_board(Board* board, GameState* gs);
 void capture_stones(GameState* gs);
-void mouse_over_board(Board* board, int play_size, int cursor_x, int cursor_y);
+void mouse_over_board(Board* board, int cursor_x, int cursor_y);

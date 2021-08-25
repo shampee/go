@@ -16,6 +16,7 @@ typedef struct
 {
 	Cell* cell_array[MAXGRIDSIZE][MAXGRIDSIZE];
 	Cell* grid_cursor_ghost;
+	int	  play_size;
 } Board;
 
 typedef struct
