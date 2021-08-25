@@ -6,6 +6,12 @@ int main(int argc, char* argv[])
     init_sdl();
     SDL_SetWindowTitle(app.window, "Go");
 
+    Settings s = {
+        .monitor = 0,
+    };
+
+    setDisplayModes(&s);
+
     // Should we move these initialisations into some function?
     Board board = {
         .cell_array        = { { NULL } },
@@ -70,7 +76,8 @@ int main(int argc, char* argv[])
 
     // load text for reset board button
     SDL_Texture* reset_button_text;
-    reset_button_text = get_text(" Reset Board ", "fonts/times-new-roman.ttf", 100, black, app.renderer);
+    reset_button_text = get_text(
+        " Reset Board ", "fonts/times-new-roman.ttf", 100, black, app.renderer);
 
     // cells to show score for black and white
     SDL_Rect black_sc_rect;
@@ -104,7 +111,11 @@ int main(int argc, char* argv[])
     for (i = 0; i < board.play_size; alphabet_char++, i++)
     {
         sprintf(alphabet_char_string, " %c ", alphabet_char);
-        texture_array_alpha[i] = get_text(alphabet_char_string, "fonts/times-new-roman.ttf", 100, black, app.renderer);
+        texture_array_alpha[i] = get_text(alphabet_char_string,
+                                          "fonts/times-new-roman.ttf",
+                                          100,
+                                          black,
+                                          app.renderer);
     }
 
     // create textures for co ordinates on edges of board - numerical
@@ -114,8 +125,11 @@ int main(int argc, char* argv[])
     for (i = 0; i < board.play_size; num_char--, i++)
     {
         sprintf(num_char_str, " %d ", num_char);
-        texture_array_num[i] = get_text(
-            num_char_str, "fonts/times-new-roman.ttf", 100, black, app.renderer);
+        texture_array_num[i] = get_text(num_char_str,
+                                        "fonts/times-new-roman.ttf",
+                                        100,
+                                        black,
+                                        app.renderer);
     }
 
     // load image for dot
@@ -133,59 +147,39 @@ int main(int argc, char* argv[])
         {
             switch (event.type)
             {
-                case SDL_KEYDOWN:
-                    switch (event.key.keysym.sym)
-                    {
-                        case SDLK_ESCAPE:
-                            break;
-                    }
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym)
+                {
+                case SDLK_ESCAPE:
                     break;
-                case SDL_MOUSEBUTTONDOWN:
-                    if (event.motion.x > 0 && event.motion.y > 0 &&
-                        event.motion.x < SCREEN_HEIGHT &&
-                        event.motion.y < SCREEN_HEIGHT)
-                        left_click_on_board(&board,
-                                            &gs,
-                                            event.motion.x,
-                                            event.motion.y);
-                    else if (event.motion.x > blackb.x &&
-                             event.motion.y > blackb.y &&
-                             event.motion.x < (blackb.x + blackb.w) &&
-                             event.motion.y < (blackb.y + blackb.h))
-                        (&gs)->turn = BLACK;
-                    else if (event.motion.x > whiteb.x &&
-                             event.motion.y > whiteb.y &&
-                             event.motion.x < (whiteb.x + whiteb.w) &&
-                             event.motion.y < (whiteb.y + whiteb.h))
-                        (&gs)->turn = WHITE;
-                    else if (event.motion.x > reset_board_b.x &&
-                             event.motion.y > reset_board_b.y &&
-                             event.motion.x <
-                                 (reset_board_b.x + reset_board_b.w) &&
-                             event.motion.y <
-                                 (reset_board_b.y + reset_board_b.h))
-                        reset_board(&board, &gs);
-                    break;
-                case SDL_MOUSEMOTION:
-                    if (event.motion.x > 0 && event.motion.y > 0 &&
-                        event.motion.x < SCREEN_HEIGHT &&
-                        event.motion.y < SCREEN_HEIGHT)
-                        mouse_over_board(
-                            &board, event.motion.x, event.motion.y);
-                    if (!mouse_active)
-                        mouse_active = SDL_TRUE;
-                    break;
-                case SDL_WINDOWEVENT:
-                    if (event.window.event == SDL_WINDOWEVENT_ENTER &&
-                        !mouse_hover)
-                        mouse_hover = SDL_TRUE;
-                    else if (event.window.event == SDL_WINDOWEVENT_LEAVE &&
-                             mouse_hover)
-                        mouse_hover = SDL_FALSE;
-                    break;
-                case SDL_QUIT:
-                    quit = SDL_TRUE;
-                    break;
+                }
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (is_cursor_within_board(event.motion))
+                    process_click_on_board(&board, &gs, event.motion);
+                else if (is_cursor_within_button(event.motion, blackb))
+                    (&gs)->turn = BLACK;
+                else if (is_cursor_within_button(event.motion, whiteb))
+                    (&gs)->turn = WHITE;
+                else if (is_cursor_within_button(event.motion, reset_board_b))
+                    reset_board(&board, &gs);
+                break;
+            case SDL_MOUSEMOTION:
+                if (is_cursor_within_board(event.motion))
+                    process_mouse_over_board(&board, event.motion);
+                if (!mouse_active)
+                    mouse_active = SDL_TRUE;
+                break;
+            case SDL_WINDOWEVENT:
+                if (event.window.event == SDL_WINDOWEVENT_ENTER && !mouse_hover)
+                    mouse_hover = SDL_TRUE;
+                else if (event.window.event == SDL_WINDOWEVENT_LEAVE &&
+                         mouse_hover)
+                    mouse_hover = SDL_FALSE;
+                break;
+            case SDL_QUIT:
+                quit = SDL_TRUE;
+                break;
             }
         }
 
@@ -231,49 +225,80 @@ int main(int argc, char* argv[])
         // Draw dots on board
         if (board.play_size == 9)
         {
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[3][3]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[3][7]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[5][5]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[7][3]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[7][7]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[3][3]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[3][7]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[5][5]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[7][3]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[7][7]->dims);
         }
 
         else if (board.play_size == 13)
         {
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][4]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][10]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[7][7]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[10][4]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[10][10]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[4][4]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[4][10]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[7][7]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[10][4]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[10][10]->dims);
         }
 
         else if (board.play_size == 19)
         {
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][4]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][10]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[4][16]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[4][4]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[4][10]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[4][16]->dims);
 
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[10][4]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[10][10]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[10][16]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[10][4]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[10][10]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[10][16]->dims);
 
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[16][4]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[16][10]->dims);
-            SDL_RenderCopy(app.renderer, dot_image, NULL, &board.cell_array[16][16]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[16][4]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[16][10]->dims);
+            SDL_RenderCopy(
+                app.renderer, dot_image, NULL, &board.cell_array[16][16]->dims);
         }
 
         // Draw co ordinates
         for (row = 0, col = 1, i = 0; i < board.play_size; col++, i++)
-            SDL_RenderCopy(app.renderer, texture_array_alpha[i], NULL, &board.cell_array[row][col]->dims);
+            SDL_RenderCopy(app.renderer,
+                           texture_array_alpha[i],
+                           NULL,
+                           &board.cell_array[row][col]->dims);
 
         for (row = grid_size, col = 1, i = 0; i < board.play_size; col++, i++)
-            SDL_RenderCopy(app.renderer, texture_array_alpha[i], NULL, &board.cell_array[row][col]->dims);
+            SDL_RenderCopy(app.renderer,
+                           texture_array_alpha[i],
+                           NULL,
+                           &board.cell_array[row][col]->dims);
 
         for (row = 1, col = 0, i = 0; i < board.play_size; row++, i++)
-            SDL_RenderCopy(app.renderer, texture_array_num[i], NULL, &board.cell_array[row][col]->dims);
+            SDL_RenderCopy(app.renderer,
+                           texture_array_num[i],
+                           NULL,
+                           &board.cell_array[row][col]->dims);
 
         for (row = 1, col = grid_size, i = 0; i < board.play_size; row++, i++)
-            SDL_RenderCopy(app.renderer, texture_array_num[i], NULL, &board.cell_array[row][col]->dims);
+            SDL_RenderCopy(app.renderer,
+                           texture_array_num[i],
+                           NULL,
+                           &board.cell_array[row][col]->dims);
 
         // Draw white and black buttons
         SDL_RenderCopy(app.renderer, black_stone, NULL, &blackb);
@@ -288,18 +313,29 @@ int main(int argc, char* argv[])
         // Draw grid ghost cursor.
         if (mouse_active && mouse_hover)
         {
-            SDL_SetRenderDrawColor(app.renderer, grid_cursor_ghost_color.r, grid_cursor_ghost_color.g, grid_cursor_ghost_color.b, grid_cursor_ghost_color.a);
+            SDL_SetRenderDrawColor(app.renderer,
+                                   grid_cursor_ghost_color.r,
+                                   grid_cursor_ghost_color.g,
+                                   grid_cursor_ghost_color.b,
+                                   grid_cursor_ghost_color.a);
             if (board.grid_cursor_ghost->cell_value == EMPTY)
-                SDL_RenderFillRect(app.renderer, &board.grid_cursor_ghost->dims);
+                SDL_RenderFillRect(app.renderer,
+                                   &board.grid_cursor_ghost->dims);
         }
 
         // Draw stones.
         for (row = 0, col = 0; row <= grid_size;)
         {
             if (board.cell_array[row][col]->cell_value == BLACK)
-                SDL_RenderCopy(app.renderer, black_stone, NULL, &board.cell_array[row][col]->dims);
+                SDL_RenderCopy(app.renderer,
+                               black_stone,
+                               NULL,
+                               &board.cell_array[row][col]->dims);
             else if (board.cell_array[row][col]->cell_value == WHITE)
-                SDL_RenderCopy(app.renderer, white_stone, NULL, &board.cell_array[row][col]->dims);
+                SDL_RenderCopy(app.renderer,
+                               white_stone,
+                               NULL,
+                               &board.cell_array[row][col]->dims);
             col++;
             if (col > grid_size)
             {
@@ -310,14 +346,18 @@ int main(int argc, char* argv[])
 
         // draw score for black and white
 
-        SDL_RenderCopy(app.renderer, gs.score.black_sc_texture, NULL, &black_sc_rect);
-        SDL_RenderCopy(app.renderer, gs.score.white_sc_texture, NULL, &white_sc_rect);
+        SDL_RenderSetLogicalSize(app.renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+        SDL_RenderCopy(
+            app.renderer, gs.score.black_sc_texture, NULL, &black_sc_rect);
+        SDL_RenderCopy(
+            app.renderer, gs.score.white_sc_texture, NULL, &white_sc_rect);
 
         SDL_RenderPresent(app.renderer);
     }
 
     return 0;
 }
+
 void init_sdl(void)
 {
     int rendererFlags, windowFlags;
@@ -332,7 +372,12 @@ void init_sdl(void)
         exit(1);
     }
 
-    app.window = SDL_CreateWindow("Go", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, windowFlags);
+    app.window = SDL_CreateWindow("Go",
+                                  SDL_WINDOWPOS_UNDEFINED,
+                                  SDL_WINDOWPOS_UNDEFINED,
+                                  SCREEN_WIDTH,
+                                  SCREEN_HEIGHT,
+                                  windowFlags);
 
     if (!app.window)
     {
@@ -388,11 +433,14 @@ SDL_Texture* get_image(const char* file_name, SDL_Renderer* renderer)
     return image_texture;
 }
 
-SDL_Texture* get_text(const char* text, const char* font_path, int size, SDL_Color color, SDL_Renderer* renderer)
+SDL_Texture* get_text(const char* text, const char* font_path, int size,
+                      SDL_Color color, SDL_Renderer* renderer)
 {
-    TTF_Font*    font_and_size   = TTF_OpenFont(font_path, size);
-    SDL_Surface* surface_message = TTF_RenderText_Blended(font_and_size, text, color);
-    SDL_Texture* message_texture = SDL_CreateTextureFromSurface(app.renderer, surface_message);
+    TTF_Font*    font_and_size = TTF_OpenFont(font_path, size);
+    SDL_Surface* surface_message =
+        TTF_RenderText_Blended(font_and_size, text, color);
+    SDL_Texture* message_texture =
+        SDL_CreateTextureFromSurface(app.renderer, surface_message);
     SDL_FreeSurface(surface_message);
     return message_texture;
 }
@@ -436,7 +484,7 @@ void init_board(Board* board, int play_size)
     board->grid_cursor_ghost->cell_value = OOB;
     board->play_size                     = play_size;
 }
-void left_click_on_board(Board* board, GameState* gs, int cursor_x, int cursor_y)
+void process_click_on_board(Board* board, GameState* gs, SDL_MouseMotionEvent m)
 {
     int row            = 0;
     int col            = 0;
@@ -445,7 +493,10 @@ void left_click_on_board(Board* board, GameState* gs, int cursor_x, int cursor_y
 
     while (row <= grid_size)
     {
-        if (cursor_x > board->cell_array[row][col]->dims.x && cursor_y > board->cell_array[row][col]->dims.y && cursor_x < (board->cell_array[row][col]->dims.x) + grid_cell_size && cursor_y < (board->cell_array[row][col]->dims.y) + grid_cell_size)
+        if (m.x > board->cell_array[row][col]->dims.x &&
+            m.y > board->cell_array[row][col]->dims.y &&
+            m.x < (board->cell_array[row][col]->dims.x) + grid_cell_size &&
+            m.y < (board->cell_array[row][col]->dims.y) + grid_cell_size)
         {
             if (board->cell_array[row][col]->cell_value == EMPTY)
             {
@@ -466,7 +517,9 @@ void left_click_on_board(Board* board, GameState* gs, int cursor_x, int cursor_y
                     if (gs->stones_to_capture == YES &&
                         gs->ko_rule_black == board->cell_array[row][col])
                     {
-                        printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
+                        printf("Rule: ko, also known as infinity - you cannot "
+                               "place the stone in the same cell as your "
+                               "previous move\n\n");
                         board->cell_array[row][col]->cell_value = EMPTY;
                         while (gs->capcount > 0)
                             gs->stones_captured[gs->capcount--]->scan_count = 0;
@@ -494,7 +547,9 @@ void left_click_on_board(Board* board, GameState* gs, int cursor_x, int cursor_y
                     if (gs->stones_to_capture == YES &&
                         gs->ko_rule_white == board->cell_array[row][col])
                     {
-                        printf("Rule: ko, also known as infinity - you cannot place the stone in the same cell as your previous move\n\n");
+                        printf("Rule: ko, also known as infinity - you cannot "
+                               "place the stone in the same cell as your "
+                               "previous move\n\n");
                         board->cell_array[row][col]->cell_value = EMPTY;
                         while (gs->capcount > 0)
                             gs->stones_captured[gs->capcount--]->scan_count = 0;
@@ -524,7 +579,8 @@ void left_click_on_board(Board* board, GameState* gs, int cursor_x, int cursor_y
 	the address of all cells of the stones in the group are stored in the cells_scanned array, which will later be used to remove (if no liberties are found) the
 	stones off of the board, by changing the cell value of each cell to EMPTY
 */
-void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row, int col)
+void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
+                     int col)
 {
     if (board->cell_array[row][col]->cell_value == enemy_color &&
         board->cell_array[row][col]->scan_count == 0)
@@ -537,7 +593,8 @@ void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row, int 
         if (gs->liberties == 0)
         {
             while (gs->count > 0)
-                gs->stones_captured[++gs->capcount] = gs->cells_scanned[gs->count--];
+                gs->stones_captured[++gs->capcount] =
+                    gs->cells_scanned[gs->count--];
             gs->stones_to_capture = YES;
         }
         else if (gs->liberties != 0)
@@ -549,7 +606,8 @@ void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row, int 
     }
 }
 
-void scan_group_for_liberties(Board* board, GameState* gs, int target_color, int row, int col)
+void scan_group_for_liberties(Board* board, GameState* gs, int target_color,
+                              int row, int col)
 {
     if (board->cell_array[row - 1][col]->cell_value == target_color)
     {
@@ -617,23 +675,34 @@ void capture_stones(GameState* gs)
 void get_score_text_black(GameState* gs)
 {
     sprintf(gs->score.black_sc_str, " %d ", gs->score.black_score);
-    gs->score.black_sc_texture = get_text(gs->score.black_sc_str, "fonts/times-new-roman.ttf", 100, gs->score.black, app.renderer);
+    gs->score.black_sc_texture = get_text(gs->score.black_sc_str,
+                                          "fonts/times-new-roman.ttf",
+                                          100,
+                                          gs->score.black,
+                                          app.renderer);
 }
 
 void get_score_text_white(GameState* gs)
 {
     sprintf(gs->score.white_sc_str, " %d ", gs->score.white_score);
-    gs->score.white_sc_texture = get_text(gs->score.white_sc_str, "fonts/times-new-roman.ttf", 100, gs->score.black, app.renderer);
+    gs->score.white_sc_texture = get_text(gs->score.white_sc_str,
+                                          "fonts/times-new-roman.ttf",
+                                          100,
+                                          gs->score.black,
+                                          app.renderer);
 }
 
-int check_for_suicide(Board* board, GameState* gs, int own_color, int row, int col)
+int check_for_suicide(Board* board, GameState* gs, int own_color, int row,
+                      int col)
 {
     scan_group_for_liberties(board, gs, own_color, row, col);
 
     if (gs->liberties == 0)
     {
         board->cell_array[row][col]->cell_value = EMPTY;
-        printf("Rule: You can not reduce your own group of stones liberties to 0, or otherwise place a stone where there are no liberties for it\n\n");
+        printf("Rule: You can not reduce your own group of stones liberties to "
+               "0, or otherwise place a stone where there are no liberties for "
+               "it\n\n");
         while (gs->count > 0)
             gs->cells_scanned[gs->count--]->scan_count = 0;
         return !OK;
@@ -670,7 +739,7 @@ void reset_board(Board* board, GameState* gs)
     gs->ko_rule_white = NULL;
 }
 
-void mouse_over_board(Board* board, int cursor_x, int cursor_y)
+void process_mouse_over_board(Board* board, SDL_MouseMotionEvent m)
 {
     int row            = 0;
     int col            = 0;
@@ -679,10 +748,10 @@ void mouse_over_board(Board* board, int cursor_x, int cursor_y)
 
     while (row <= grid_size)
     {
-        if (cursor_x > board->cell_array[row][col]->dims.x &&
-            cursor_y > board->cell_array[row][col]->dims.y &&
-            cursor_x < (board->cell_array[row][col]->dims.x) + grid_cell_size &&
-            cursor_y < (board->cell_array[row][col]->dims.y) + grid_cell_size)
+        if (m.x > board->cell_array[row][col]->dims.x &&
+            m.y > board->cell_array[row][col]->dims.y &&
+            m.x < (board->cell_array[row][col]->dims.x) + grid_cell_size &&
+            m.y < (board->cell_array[row][col]->dims.y) + grid_cell_size)
         {
             board->grid_cursor_ghost = board->cell_array[row][col];
             break;
@@ -694,5 +763,30 @@ void mouse_over_board(Board* board, int cursor_x, int cursor_y)
             col = 0;
             row++;
         }
+    }
+}
+
+int is_cursor_within_board(const SDL_MouseMotionEvent m)
+{
+    return (m.x > 0 && m.y > 0 && m.x < SCREEN_HEIGHT && m.y < SCREEN_HEIGHT);
+}
+
+int is_cursor_within_button(const SDL_MouseMotionEvent m, const SDL_Rect b)
+{
+    return (m.x > b.x && m.y > b.y && m.x < (b.x + b.w) && m.y < (b.y + b.h));
+}
+
+// SDL_DisplayMode* getDisplayModes(Settings* s)
+void setDisplayModes(Settings* s)
+{
+    int n = SDL_GetNumDisplayModes(s->monitor);
+
+    SDL_DisplayMode* modes = calloc(n, sizeof(SDL_DisplayMode));
+
+    for (int i = 0; i < n; i++)
+    {
+        if (SDL_GetDisplayMode(s->monitor, i, &s->display_mode) != 0)
+            SDL_Log("SDL_GetDisplayMode failed: %s", SDL_GetError());
+        modes[i] = s->display_mode;
     }
 }
