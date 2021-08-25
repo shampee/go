@@ -298,13 +298,13 @@ void capture_stones(GameState* gs)
 void get_score_text_black(GameState* gs)
 {
 	sprintf(gs->score.black_sc_str, " %d ", gs->score.black_score);
-	gs->score.black_sc_texture = get_text(gs->score.black_sc_str, "times-new-roman.ttf", 100, gs->score.black, app.renderer);
+	gs->score.black_sc_texture = get_text(gs->score.black_sc_str, "fonts/times-new-roman.ttf", 100, gs->score.black, app.renderer);
 }
 
 void get_score_text_white(GameState* gs)
 {
 	sprintf(gs->score.white_sc_str, " %d ", gs->score.white_score);
-	gs->score.white_sc_texture = get_text(gs->score.white_sc_str, "times-new-roman.ttf", 100, gs->score.black, app.renderer);
+	gs->score.white_sc_texture = get_text(gs->score.white_sc_str, "fonts/times-new-roman.ttf", 100, gs->score.black, app.renderer);
 }
 
 int check_for_suicide(Board* board, GameState* gs, int own_color, int row, int col)
@@ -430,8 +430,8 @@ int main(int argc, char* argv[])
 	// load images for stones
 	SDL_Texture* black_stone;
 	SDL_Texture* white_stone;
-	black_stone = get_image("b.png", app.renderer);
-	white_stone = get_image("w.png", app.renderer);
+	black_stone = get_image("assets/b.png", app.renderer);
+	white_stone = get_image("assets/w.png", app.renderer);
 
 	// dimensions for buttons to change players turn
 	SDL_Rect blackb;
@@ -449,7 +449,7 @@ int main(int argc, char* argv[])
 
 	// load text for reset board button
 	SDL_Texture* reset_button_text;
-	reset_button_text = get_text(" Reset Board ", "times-new-roman.ttf", 100, black, app.renderer);
+	reset_button_text = get_text(" Reset Board ", "fonts/times-new-roman.ttf", 100, black, app.renderer);
 
 	// cells to show score for black and white
 	SDL_Rect black_sc_rect;
@@ -483,7 +483,7 @@ int main(int argc, char* argv[])
 	for (i = 0; i < play_size; alphabet_char++, i++)
 	{
 		sprintf(alphabet_char_string, " %c ", alphabet_char);
-		texture_array_alpha[i] = get_text(alphabet_char_string, "times-new-roman.ttf", 100, black, app.renderer);
+		texture_array_alpha[i] = get_text(alphabet_char_string, "fonts/times-new-roman.ttf", 100, black, app.renderer);
 	}
 
 	// create textures for co ordinates on edges of board - numerical
@@ -494,7 +494,7 @@ int main(int argc, char* argv[])
 	{
 		sprintf(num_char_str, " %d ", num_char);
 		texture_array_num[i] = get_text(
-			num_char_str, "times-new-roman.ttf", 100, black, app.renderer);
+			num_char_str, "fonts/times-new-roman.ttf", 100, black, app.renderer);
 	}
 
 	// load image for dot
