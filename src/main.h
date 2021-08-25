@@ -1,12 +1,12 @@
 #include "common.h"
 
 enum { EMPTY,
-	   BLACK,
-	   WHITE,
-	   OOB,
-	   OK,
-	   YES,
-	   NO };
+       BLACK,
+       WHITE,
+       OOB,
+       OK,
+       YES,
+       NO };
 
 void init_sdl(void);
 void cleanup(void);
@@ -19,7 +19,7 @@ SDL_Texture* get_text(const char* text, const char* font_path, int size, SDL_Col
 void init_board(Board* board, int play_size);
 void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row, int col);
 void capture_stones(GameState* gs);
-int	 check_for_suicide(Board* board, GameState* gs, int own_color, int row, int col);
+int  check_for_suicide(Board* board, GameState* gs, int own_color, int row, int col);
 void scan_group_for_liberties(Board* board, GameState* gs, int enemy_color, int row, int col);
 void left_click_on_board(Board* board, GameState* gs, int cursor_x, int cursor_y);
 void get_score_text_black(GameState* gs);
