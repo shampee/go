@@ -48,7 +48,13 @@ typedef struct
 typedef struct
 {
     char            monitor;
+    float           aspect_ratio;
     SDL_DisplayMode display_mode;
+    struct
+    {
+        int w;
+        int h;
+    } window_size;
     struct
     {
         SDL_DisplayMode* modes;
