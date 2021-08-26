@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
         .monitor = 0,
     };
 
-    setDisplayModes(&s);
+    getDisplayModes(&s);
 
     // Should we move these initialisations into some function?
     Board board = {
@@ -776,17 +776,32 @@ int is_cursor_within_button(const SDL_MouseMotionEvent m, const SDL_Rect b)
     return (m.x > b.x && m.y > b.y && m.x < (b.x + b.w) && m.y < (b.y + b.h));
 }
 
-// SDL_DisplayMode* getDisplayModes(Settings* s)
-void setDisplayModes(Settings* s)
+void printDisplayMode(const SDL_DisplayMode* mode)
+{
+    printf("{bpp: %i, format: %s, w: %i, h: %i, hz: %i}\n",
+           SDL_BITSPERPIXEL(mode->format),
+           SDL_GetPixelFormatName(mode->format),
+           mode->w,
+           mode->h,
+           mode->refresh_rate);
+}
+
+// Fills up the s.available_modes.modes with all modes
+// available to the monitor that s.monitor is set to.
+void getDisplayModes(Settings* s)
 {
     int n = SDL_GetNumDisplayModes(s->monitor);
 
-    SDL_DisplayMode* modes = calloc(n, sizeof(SDL_DisplayMode));
+    SDL_DisplayMode mode;
+    s->available_modes.modes = calloc(n, sizeof(SDL_DisplayMode));
+    s->available_modes.len   = n;
 
+    // The more obvious way didn't seem to work
+    // so we're going with the hacky way now
     for (int i = 0; i < n; i++)
     {
-        if (SDL_GetDisplayMode(s->monitor, i, &s->display_mode) != 0)
+        if (SDL_GetDisplayMode(s->monitor, i, &mode) != 0)
             SDL_Log("SDL_GetDisplayMode failed: %s", SDL_GetError());
-        modes[i] = s->display_mode;
+        s->available_modes.modes[i] = mode;
     }
 }

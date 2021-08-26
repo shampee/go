@@ -29,5 +29,6 @@ void process_mouse_over_board(Board* board, SDL_MouseMotionEvent m);
 int is_cursor_within_board(SDL_MouseMotionEvent m);
 int is_cursor_within_button(SDL_MouseMotionEvent m, const SDL_Rect b);
 
-// SDL_DisplayMode* getDisplayModes(Settings* s);
-void setDisplayModes(Settings* s);
+void getDisplayModes(Settings* s);
+
+void printDisplayMode(const SDL_DisplayMode* mode);
