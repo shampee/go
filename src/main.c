@@ -3,14 +3,13 @@ int main(int argc, char* argv[])
 {
     memset(&app, 0, sizeof(App));
 
-    init_sdl();
-    SDL_SetWindowTitle(app.window, "Go");
-
     Settings s = {
         .monitor = 0,
     };
 
-    setDisplayModes(&s);
+    init_sdl(&s);
+    SDL_SetWindowTitle(app.window, "Go");
+    printDisplayMode(&s.display_mode);
 
     // Should we move these initialisations into some function?
     Board board = {
@@ -40,12 +39,12 @@ int main(int argc, char* argv[])
     atexit(cleanup);
 
     int grid_size      = board.play_size + 1;
-    int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
+    int grid_cell_size = s.window_size.h / (grid_size + 1);
 
     int row = 0;
     int col = 0;
 
-    init_board(&board, board.play_size);
+    init_board(&s, &board, board.play_size);
 
     // Colors
     SDL_Color grid_background         = { 222, 184, 135, 255 };
@@ -66,13 +65,13 @@ int main(int argc, char* argv[])
 
     blackb.w = grid_cell_size;
     blackb.h = grid_cell_size;
-    blackb.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 3));
-    blackb.y = (SCREEN_HEIGHT / (grid_size + 1)) * 3;
+    blackb.x = (s.window_size.h + ((s.window_size.w - s.window_size.h) / 3));
+    blackb.y = (s.window_size.h / (grid_size + 1)) * 3;
 
     whiteb.w = grid_cell_size;
     whiteb.h = grid_cell_size;
-    whiteb.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 3));
-    whiteb.y = (SCREEN_HEIGHT / (grid_size + 1)) * 5;
+    whiteb.x = (s.window_size.h + ((s.window_size.w - s.window_size.h) / 3));
+    whiteb.y = (s.window_size.h / (grid_size + 1)) * 5;
 
     // load text for reset board button
     SDL_Texture* reset_button_text;
@@ -100,8 +99,9 @@ int main(int argc, char* argv[])
     SDL_Rect reset_board_b;
     reset_board_b.w = grid_cell_size * 4;
     reset_board_b.h = grid_cell_size;
-    reset_board_b.x = (SCREEN_HEIGHT + ((SCREEN_WIDTH - SCREEN_HEIGHT) / 6));
-    reset_board_b.y = (SCREEN_HEIGHT / (grid_size + 1)) * 7;
+    reset_board_b.x =
+        (s.window_size.h + ((s.window_size.w - s.window_size.h) / 6));
+    reset_board_b.y = (s.window_size.h / (grid_size + 1)) * 7;
 
     // create textures for co ordinates on edges of board - alphabetical
     SDL_Texture* texture_array_alpha[grid_size];
@@ -155,8 +155,8 @@ int main(int argc, char* argv[])
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                if (is_cursor_within_board(event.motion))
-                    process_click_on_board(&board, &gs, event.motion);
+                if (is_cursor_within_board(&s, event.motion))
+                    process_click_on_board(&s, &board, &gs, event.motion);
                 else if (is_cursor_within_button(event.motion, blackb))
                     (&gs)->turn = BLACK;
                 else if (is_cursor_within_button(event.motion, whiteb))
@@ -165,8 +165,8 @@ int main(int argc, char* argv[])
                     reset_board(&board, &gs);
                 break;
             case SDL_MOUSEMOTION:
-                if (is_cursor_within_board(event.motion))
-                    process_mouse_over_board(&board, event.motion);
+                if (is_cursor_within_board(&s, event.motion))
+                    process_mouse_over_board(&s, &board, event.motion);
                 if (!mouse_active)
                     mouse_active = SDL_TRUE;
                 break;
@@ -182,6 +182,37 @@ int main(int argc, char* argv[])
                 break;
             }
         }
+
+        getWindowSize(&s);
+        update_board(&s, &board);
+        grid_cell_size = s.window_size.h / (grid_size + 1);
+        blackb.w       = grid_cell_size;
+        blackb.h       = grid_cell_size;
+        blackb.x =
+            (s.window_size.h + ((s.window_size.w - s.window_size.h) / 3));
+        blackb.y = (s.window_size.h / (grid_size + 1)) * 3;
+
+        whiteb.w = grid_cell_size;
+        whiteb.h = grid_cell_size;
+        whiteb.x =
+            (s.window_size.h + ((s.window_size.w - s.window_size.h) / 3));
+        whiteb.y = (s.window_size.h / (grid_size + 1)) * 5;
+
+        black_sc_rect.w = grid_cell_size;
+        black_sc_rect.h = grid_cell_size;
+        black_sc_rect.x = (blackb.x + grid_cell_size * 2);
+        black_sc_rect.y = (blackb.y);
+
+        white_sc_rect.w = grid_cell_size;
+        white_sc_rect.h = grid_cell_size;
+        white_sc_rect.x = (whiteb.x + grid_cell_size * 2);
+        white_sc_rect.y = (whiteb.y);
+
+        reset_board_b.w = grid_cell_size * 4;
+        reset_board_b.h = grid_cell_size;
+        reset_board_b.x =
+            (s.window_size.h + ((s.window_size.w - s.window_size.h) / 6));
+        reset_board_b.y = (s.window_size.h / (grid_size + 1)) * 7;
 
         // Draw grid background.
         SDL_SetRenderDrawColor(app.renderer,
@@ -344,9 +375,13 @@ int main(int argc, char* argv[])
             }
         }
 
-        // draw score for black and white
+        // SDL_RenderSetScale(app.renderer, 1, 1);
+        // SDL_RenderSetLogicalSize(
+        //     app.renderer, s.display_mode.w, s.display_mode.h);
+        // SDL_Rect r;
+        // printRect(r.x, r.y, r.w, r.h);
+        // printRect(s.window_size.w, s.window_size.h, 0, 0);
 
-        SDL_RenderSetLogicalSize(app.renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
         SDL_RenderCopy(
             app.renderer, gs.score.black_sc_texture, NULL, &black_sc_rect);
         SDL_RenderCopy(
@@ -358,7 +393,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void init_sdl(void)
+void init_sdl(Settings* s)
 {
     int rendererFlags, windowFlags;
 
@@ -371,19 +406,28 @@ void init_sdl(void)
         printf("Couldn't initialize SDL: %s\n", SDL_GetError());
         exit(1);
     }
+    // We need functionality so we can choose, like a menu
+    getDisplayModes(s);
+    s->display_mode = s->available_modes.modes[0];
+
+    // Initialize window size
+    s->window_size.w = s->display_mode.w;
+    s->window_size.h = s->display_mode.h;
+    // Initialize ratio
+    s->aspect_ratio = (float)s->display_mode.w / (float)s->display_mode.h;
 
     app.window = SDL_CreateWindow("Go",
                                   SDL_WINDOWPOS_UNDEFINED,
                                   SDL_WINDOWPOS_UNDEFINED,
-                                  SCREEN_WIDTH,
-                                  SCREEN_HEIGHT,
+                                  s->display_mode.w,
+                                  s->display_mode.h,
                                   windowFlags);
 
     if (!app.window)
     {
         printf("Failed to open %d x %d window: %s\n",
-               SCREEN_WIDTH,
-               SCREEN_HEIGHT,
+               s->display_mode.w,
+               s->display_mode.h,
                SDL_GetError());
         exit(1);
     }
@@ -444,14 +488,14 @@ SDL_Texture* get_text(const char* text, const char* font_path, int size,
     SDL_FreeSurface(surface_message);
     return message_texture;
 }
-void init_board(Board* board, int play_size)
+void init_board(Settings* s, Board* board, int play_size)
 {
     int row            = 0;
     int col            = 0;
     int x              = 0;
     int y              = 0;
     int grid_size      = board->play_size + 1;
-    int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
+    int grid_cell_size = s->window_size.h / (grid_size + 1);
 
     while (row <= grid_size)
     {
@@ -484,12 +528,43 @@ void init_board(Board* board, int play_size)
     board->grid_cursor_ghost->cell_value = OOB;
     board->play_size                     = play_size;
 }
-void process_click_on_board(Board* board, GameState* gs, SDL_MouseMotionEvent m)
+
+void update_board(Settings* s, Board* board)
+{
+    int row            = 0;
+    int col            = 0;
+    int x              = 0;
+    int y              = 0;
+    int grid_size      = board->play_size + 1;
+    int grid_cell_size = s->window_size.h / (grid_size + 1);
+
+    while (row <= grid_size)
+    {
+        board->cell_array[row][col]->dims.w = grid_cell_size;
+        board->cell_array[row][col]->dims.h = grid_cell_size;
+        board->cell_array[row][col]->dims.x = x;
+        board->cell_array[row][col]->dims.y = y;
+
+        x += grid_cell_size;
+        col++;
+
+        if (col > grid_size)
+        {
+            col = 0;
+            x   = 0;
+            row++;
+            y += grid_cell_size;
+        }
+    }
+}
+
+void process_click_on_board(Settings* s, Board* board, GameState* gs,
+                            SDL_MouseMotionEvent m)
 {
     int row            = 0;
     int col            = 0;
     int grid_size      = board->play_size + 1;
-    int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
+    int grid_cell_size = s->window_size.h / (grid_size + 1);
 
     while (row <= grid_size)
     {
@@ -739,12 +814,12 @@ void reset_board(Board* board, GameState* gs)
     gs->ko_rule_white = NULL;
 }
 
-void process_mouse_over_board(Board* board, SDL_MouseMotionEvent m)
+void process_mouse_over_board(Settings* s, Board* board, SDL_MouseMotionEvent m)
 {
     int row            = 0;
     int col            = 0;
     int grid_size      = board->play_size + 1;
-    int grid_cell_size = SCREEN_HEIGHT / (grid_size + 1);
+    int grid_cell_size = s->window_size.h / (grid_size + 1);
 
     while (row <= grid_size)
     {
@@ -766,9 +841,10 @@ void process_mouse_over_board(Board* board, SDL_MouseMotionEvent m)
     }
 }
 
-int is_cursor_within_board(const SDL_MouseMotionEvent m)
+int is_cursor_within_board(Settings* s, const SDL_MouseMotionEvent m)
 {
-    return (m.x > 0 && m.y > 0 && m.x < SCREEN_HEIGHT && m.y < SCREEN_HEIGHT);
+    return (m.x > 0 && m.y > 0 && m.x < s->window_size.h &&
+            m.y < s->window_size.h);
 }
 
 int is_cursor_within_button(const SDL_MouseMotionEvent m, const SDL_Rect b)
@@ -776,17 +852,45 @@ int is_cursor_within_button(const SDL_MouseMotionEvent m, const SDL_Rect b)
     return (m.x > b.x && m.y > b.y && m.x < (b.x + b.w) && m.y < (b.y + b.h));
 }
 
-// SDL_DisplayMode* getDisplayModes(Settings* s)
-void setDisplayModes(Settings* s)
+void printDisplayMode(const SDL_DisplayMode* mode)
+{
+    printf("{bpp: %i, format: %s, w: %i, h: %i, hz: %i}\n",
+           SDL_BITSPERPIXEL(mode->format),
+           SDL_GetPixelFormatName(mode->format),
+           mode->w,
+           mode->h,
+           mode->refresh_rate);
+}
+
+// Fills up the s.available_modes.modes with all modes
+// available to the monitor that s.monitor is set to.
+void getDisplayModes(Settings* s)
 {
     int n = SDL_GetNumDisplayModes(s->monitor);
 
-    SDL_DisplayMode* modes = calloc(n, sizeof(SDL_DisplayMode));
+    SDL_DisplayMode mode;
+    s->available_modes.modes = calloc(n, sizeof(SDL_DisplayMode));
+    s->available_modes.len   = n;
 
+    // The more obvious way didn't seem to work
+    // so we're going with the hacky way now
     for (int i = 0; i < n; i++)
     {
-        if (SDL_GetDisplayMode(s->monitor, i, &s->display_mode) != 0)
+        if (SDL_GetDisplayMode(s->monitor, i, &mode) != 0)
             SDL_Log("SDL_GetDisplayMode failed: %s", SDL_GetError());
-        modes[i] = s->display_mode;
+        s->available_modes.modes[i] = mode;
     }
+}
+void printRect(int x, int y, int w, int h)
+{
+    if (x < 0 && y < 0)
+        printf("{w: %i, h: %i}\n", w, h);
+    else
+        printf("{x: %i, y: %i, w: %i, h: %i}\n", x, y, w, h);
+}
+
+void getWindowSize(Settings* s)
+{
+    // SDL_GL_GetDrawableSize(app.window, &s->window_size.w, &s->window_size.h);
+    SDL_GetWindowSize(app.window, &s->window_size.w, &s->window_size.h);
 }
