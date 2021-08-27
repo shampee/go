@@ -36,6 +36,9 @@ int main(int argc, char* argv[])
                          .white_score      = 0,
                      } };
 
+    EndScore es = { .empty_cells_next_to_black = 0,
+                    .empty_cells_next_to_white = 0 };
+
     atexit(cleanup);
 
     int grid_size      = board.play_size + 1;
@@ -186,6 +189,7 @@ int main(int argc, char* argv[])
                 {
                     mark_territory_of_dead_stones(&board, &gs, BLACK);
                     mark_territory_of_dead_stones(&board, &gs, WHITE);
+                    determine_territory(&board, &gs, &es);
                 }
                 break;
             case SDL_MOUSEMOTION:
@@ -1023,4 +1027,107 @@ void reset_scan_count_for_all_cells(Board* board, GameState* gs)
             row++;
         }
     }
+}
+
+void determine_territory(Board* board, GameState* gs, EndScore* es)
+{
+    int row       = 0;
+    int col       = 0;
+    int grid_size = board->play_size + 1;
+
+    while (row <= grid_size)
+    {
+        if (board->cell_array[row][col]->cell_value == EMPTY &&
+            board->cell_array[row][col]->scan_count == 0)
+        {
+            board->cell_array[row][col]->scan_count++;
+            gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+
+            scan_empty_cells_for_ownership(board, gs, es, row, col);
+
+            if (es->empty_cells_next_to_black > es->empty_cells_next_to_white)
+            {
+                while (gs->count > 0)
+                    gs->cells_scanned[gs->count--]->territory_value = BLACK_T;
+            }
+            else if (es->empty_cells_next_to_black <
+                     es->empty_cells_next_to_white)
+            {
+                while (gs->count > 0)
+                    gs->cells_scanned[gs->count--]->territory_value = WHITE_T;
+            }
+            gs->count                     = 0;
+            es->empty_cells_next_to_black = 0;
+            es->empty_cells_next_to_white = 0;
+        }
+
+        col++;
+
+        if (col > grid_size)
+        {
+            col = 0;
+            row++;
+        }
+    }
+    reset_scan_count_for_all_cells(board, gs);
+}
+
+void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
+                                    int row, int col)
+{
+    if (board->cell_array[row - 1][col]->cell_value == EMPTY)
+    {
+        board->cell_array[row - 1][col]->scan_count++;
+        if (board->cell_array[row - 1][col]->scan_count == 1)
+        {
+            gs->cells_scanned[++gs->count] = board->cell_array[row - 1][col];
+            scan_empty_cells_for_ownership(board, gs, es, row - 1, col);
+        }
+    }
+    else if (board->cell_array[row - 1][col]->cell_value == BLACK)
+        ++es->empty_cells_next_to_black;
+    else if (board->cell_array[row - 1][col]->cell_value == WHITE)
+        ++es->empty_cells_next_to_white;
+
+    if (board->cell_array[row][col + 1]->cell_value == EMPTY)
+    {
+        board->cell_array[row][col + 1]->scan_count++;
+        if (board->cell_array[row][col + 1]->scan_count == 1)
+        {
+            gs->cells_scanned[++gs->count] = board->cell_array[row][col + 1];
+            scan_empty_cells_for_ownership(board, gs, es, row, col + 1);
+        }
+    }
+    else if (board->cell_array[row][col + 1]->cell_value == BLACK)
+        ++es->empty_cells_next_to_black;
+    else if (board->cell_array[row][col + 1]->cell_value == WHITE)
+        ++es->empty_cells_next_to_white;
+
+    if (board->cell_array[row + 1][col]->cell_value == EMPTY)
+    {
+        board->cell_array[row + 1][col]->scan_count++;
+        if (board->cell_array[row + 1][col]->scan_count == 1)
+        {
+            gs->cells_scanned[++gs->count] = board->cell_array[row + 1][col];
+            scan_empty_cells_for_ownership(board, gs, es, row + 1, col);
+        }
+    }
+    else if (board->cell_array[row + 1][col]->cell_value == BLACK)
+        ++es->empty_cells_next_to_black;
+    else if (board->cell_array[row + 1][col]->cell_value == WHITE)
+        ++es->empty_cells_next_to_white;
+
+    if (board->cell_array[row][col - 1]->cell_value == EMPTY)
+    {
+        board->cell_array[row][col - 1]->scan_count++;
+        if (board->cell_array[row][col - 1]->scan_count == 1)
+        {
+            gs->cells_scanned[++gs->count] = board->cell_array[row][col - 1];
+            scan_empty_cells_for_ownership(board, gs, es, row, col - 1);
+        }
+    }
+    else if (board->cell_array[row][col - 1]->cell_value == BLACK)
+        ++es->empty_cells_next_to_black;
+    else if (board->cell_array[row][col - 1]->cell_value == WHITE)
+        ++es->empty_cells_next_to_white;
 }

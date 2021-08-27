@@ -48,6 +48,12 @@ typedef struct
 
 typedef struct
 {
+    int empty_cells_next_to_black;
+    int empty_cells_next_to_white;
+} EndScore;
+
+typedef struct
+{
     char            monitor;
     float           aspect_ratio;
     SDL_DisplayMode display_mode;
