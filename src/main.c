@@ -78,6 +78,14 @@ int main(int argc, char* argv[])
     reset_button_text = get_text(
         " Reset Board ", "fonts/times-new-roman.ttf", 100, black, app.renderer);
 
+    // load text for calculate territory button
+    SDL_Texture* calc_territory_text;
+    calc_territory_text = get_text(" Calculate Territory ",
+                                   "fonts/times-new-roman.ttf",
+                                   100,
+                                   black,
+                                   app.renderer);
+
     // cells to show score for black and white
     SDL_Rect black_sc_rect;
     SDL_Rect white_sc_rect;
@@ -102,6 +110,14 @@ int main(int argc, char* argv[])
     reset_board_b.x =
         (s.window_size.h + ((s.window_size.w - s.window_size.h) / 6));
     reset_board_b.y = (s.window_size.h / (grid_size + 1)) * 7;
+
+    // dimensions for calculate territory button
+    SDL_Rect calc_territory_b;
+    calc_territory_b.w = grid_cell_size * 4;
+    calc_territory_b.h = grid_cell_size;
+    calc_territory_b.x =
+        (s.window_size.h + ((s.window_size.w - s.window_size.h) / 6));
+    calc_territory_b.y = (s.window_size.h / (grid_size + 1)) * 9;
 
     // create textures for co ordinates on edges of board - alphabetical
     SDL_Texture* texture_array_alpha[grid_size];
@@ -213,6 +229,12 @@ int main(int argc, char* argv[])
         reset_board_b.x =
             (s.window_size.h + ((s.window_size.w - s.window_size.h) / 6));
         reset_board_b.y = (s.window_size.h / (grid_size + 1)) * 7;
+
+        calc_territory_b.w = grid_cell_size * 4;
+        calc_territory_b.h = grid_cell_size;
+        calc_territory_b.x =
+            (s.window_size.h + ((s.window_size.w - s.window_size.h) / 6));
+        calc_territory_b.y = (s.window_size.h / (grid_size + 1)) * 9;
 
         // Draw grid background.
         SDL_SetRenderDrawColor(app.renderer,
@@ -340,6 +362,13 @@ int main(int argc, char* argv[])
             app.renderer, white.r, white.g, white.b, white.a);
         SDL_RenderFillRect(app.renderer, &reset_board_b);
         SDL_RenderCopy(app.renderer, reset_button_text, NULL, &reset_board_b);
+
+        // Draw calculate territory button
+        SDL_SetRenderDrawColor(
+            app.renderer, white.r, white.g, white.b, white.a);
+        SDL_RenderFillRect(app.renderer, &calc_territory_b);
+        SDL_RenderCopy(
+            app.renderer, calc_territory_text, NULL, &calc_territory_b);
 
         // Draw grid ghost cursor.
         if (mouse_active && mouse_hover)
