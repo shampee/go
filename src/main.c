@@ -52,8 +52,8 @@ int main(int argc, char* argv[])
     SDL_Color grid_cursor_ghost_color = { 240, 198, 116, 255 };
     SDL_Color black                   = { 0, 0, 0, 255 };
     SDL_Color white                   = { 255, 255, 255, 255 };
-    SDL_Color black_ter               = { 0, 0, 0, 0 };
-    SDL_Color white_ter               = { 255, 255, 255, 0 };
+    SDL_Color black_ter               = { 0, 0, 0, 127 };
+    SDL_Color white_ter               = { 255, 255, 255, 127 };
 
     // load images for stones
     SDL_Texture* black_stone;
@@ -184,8 +184,8 @@ int main(int argc, char* argv[])
                 else if (is_cursor_within_button(event.motion,
                                                  calc_territory_b))
                 {
-                    mark_territory_of_dead_stones(&board, &gs, BLACK, WHITE_T);
-                    mark_territory_of_dead_stones(&board, &gs, WHITE, BLACK_T);
+                    mark_territory_of_dead_stones(&board, &gs, BLACK);
+                    mark_territory_of_dead_stones(&board, &gs, WHITE);
                 }
                 break;
             case SDL_MOUSEMOTION:
@@ -505,6 +505,9 @@ void init_sdl(Settings* s)
 
     //Initialize support for fonts
     TTF_Init();
+
+    // For having semi-transparent things rendered
+    SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
 }
 
 void cleanup(void)
@@ -957,11 +960,17 @@ void getWindowSize(Settings* s)
 }
 
 void mark_territory_of_dead_stones(Board* board, GameState* gs,
-                                   int player_color, int territory_color)
+                                   int player_color)
 {
     int row       = 0;
     int col       = 0;
     int grid_size = board->play_size + 1;
+    int territory_color;
+
+    if (player_color == BLACK)
+        territory_color = WHITE_T;
+    if (player_color == WHITE)
+        territory_color = BLACK_T;
 
     while (row <= grid_size)
     {

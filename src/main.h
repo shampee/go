@@ -38,6 +38,6 @@ void printRect(int x, int y, int w, int h);
 void getWindowSize(Settings* s);
 
 void mark_territory_of_dead_stones(Board* board, GameState* gs,
-                                   int player_color, int territory_color);
+                                   int player_color);
 
 void reset_scan_count_for_all_cells(Board* board, GameState* gs);
