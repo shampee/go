@@ -10,6 +10,7 @@ typedef struct
     SDL_Rect dims;
     int      cell_value;
     int      scan_count;
+    int      territory_value;
 } Cell;
 
 typedef struct

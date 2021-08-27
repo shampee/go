@@ -1,6 +1,6 @@
 #include "common.h"
 
-enum { EMPTY, BLACK, WHITE, OOB, OK, YES, NO };
+enum { EMPTY, BLACK, WHITE, OOB, OK, YES, NO, BLACK_T, WHITE_T, NO_T };
 
 void init_sdl(Settings* s);
 void cleanup(void);
@@ -36,3 +36,8 @@ void getDisplayModes(Settings* s);
 void printDisplayMode(const SDL_DisplayMode* mode);
 void printRect(int x, int y, int w, int h);
 void getWindowSize(Settings* s);
+
+void mark_territory_of_dead_stones(Board* board, GameState* gs,
+                                   int player_color, int territory_color);
+
+void reset_scan_count_for_all_cells(Board* board, GameState* gs);

@@ -51,7 +51,9 @@ int main(int argc, char* argv[])
     SDL_Color grid_line_color         = { 0, 0, 0, 255 };
     SDL_Color grid_cursor_ghost_color = { 240, 198, 116, 255 };
     SDL_Color black                   = { 0, 0, 0, 255 };
-    SDL_Color white                   = { 255, 255, 255, 0 };
+    SDL_Color white                   = { 255, 255, 255, 255 };
+    SDL_Color black_ter               = { 0, 0, 0, 0 };
+    SDL_Color white_ter               = { 255, 255, 255, 0 };
 
     // load images for stones
     SDL_Texture* black_stone;
@@ -179,6 +181,12 @@ int main(int argc, char* argv[])
                     (&gs)->turn = WHITE;
                 else if (is_cursor_within_button(event.motion, reset_board_b))
                     reset_board(&board, &gs);
+                else if (is_cursor_within_button(event.motion,
+                                                 calc_territory_b))
+                {
+                    mark_territory_of_dead_stones(&board, &gs, BLACK, WHITE_T);
+                    mark_territory_of_dead_stones(&board, &gs, WHITE, BLACK_T);
+                }
                 break;
             case SDL_MOUSEMOTION:
                 if (is_cursor_within_board(&s, event.motion))
@@ -386,6 +394,26 @@ int main(int argc, char* argv[])
         // Draw stones.
         for (row = 0, col = 0; row <= grid_size;)
         {
+            if (board.cell_array[row][col]->territory_value == BLACK_T)
+            {
+                SDL_SetRenderDrawColor(app.renderer,
+                                       black_ter.r,
+                                       black_ter.g,
+                                       black_ter.b,
+                                       black_ter.a);
+                SDL_RenderFillRect(app.renderer,
+                                   &board.cell_array[row][col]->dims);
+            }
+            else if (board.cell_array[row][col]->territory_value == WHITE_T)
+            {
+                SDL_SetRenderDrawColor(app.renderer,
+                                       white_ter.r,
+                                       white_ter.g,
+                                       white_ter.b,
+                                       white_ter.a);
+                SDL_RenderFillRect(app.renderer,
+                                   &board.cell_array[row][col]->dims);
+            }
             if (board.cell_array[row][col]->cell_value == BLACK)
                 SDL_RenderCopy(app.renderer,
                                black_stone,
@@ -396,6 +424,7 @@ int main(int argc, char* argv[])
                                white_stone,
                                NULL,
                                &board.cell_array[row][col]->dims);
+
             col++;
             if (col > grid_size)
             {
@@ -534,6 +563,8 @@ void init_board(Settings* s, Board* board, int play_size)
             board->cell_array[row][col]->cell_value = OOB;
         else
             board->cell_array[row][col]->cell_value = EMPTY;
+
+        board->cell_array[row][col]->territory_value = NO_T;
 
         board->cell_array[row][col]->dims.w     = grid_cell_size;
         board->cell_array[row][col]->dims.h     = grid_cell_size;
@@ -831,7 +862,8 @@ void reset_board(Board* board, GameState* gs)
         if (board->cell_array[row][col]->cell_value == BLACK ||
             board->cell_array[row][col]->cell_value == WHITE)
             board->cell_array[row][col]->cell_value = EMPTY;
-        board->cell_array[row][col]->scan_count = 0;
+        board->cell_array[row][col]->territory_value = NO_T;
+        board->cell_array[row][col]->scan_count      = 0;
         col++;
         if (col > grid_size)
         {
@@ -922,4 +954,64 @@ void getWindowSize(Settings* s)
 {
     // SDL_GL_GetDrawableSize(app.window, &s->window_size.w, &s->window_size.h);
     SDL_GetWindowSize(app.window, &s->window_size.w, &s->window_size.h);
+}
+
+void mark_territory_of_dead_stones(Board* board, GameState* gs,
+                                   int player_color, int territory_color)
+{
+    int row       = 0;
+    int col       = 0;
+    int grid_size = board->play_size + 1;
+
+    while (row <= grid_size)
+    {
+        if (board->cell_array[row][col]->cell_value == player_color &&
+            board->cell_array[row][col]->scan_count == 0)
+        {
+            board->cell_array[row][col]->scan_count++;
+            gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+
+            scan_group_for_liberties(board, gs, player_color, row, col);
+
+            if (gs->liberties == 1)
+            {
+                while (gs->count > 0)
+                    gs->cells_scanned[gs->count--]->territory_value =
+                        territory_color;
+                gs->liberties = 0;
+            }
+            else if (gs->liberties != 0)
+            {
+                gs->count     = 0;
+                gs->liberties = 0;
+            }
+        }
+
+        col++;
+
+        if (col > grid_size)
+        {
+            col = 0;
+            row++;
+        }
+    }
+    reset_scan_count_for_all_cells(board, gs);
+}
+
+void reset_scan_count_for_all_cells(Board* board, GameState* gs)
+{
+    int row       = 0;
+    int col       = 0;
+    int grid_size = board->play_size + 1;
+
+    while (row <= grid_size)
+    {
+        board->cell_array[row][col]->scan_count = 0;
+        col++;
+        if (col > grid_size)
+        {
+            col = 0;
+            row++;
+        }
+    }
 }
