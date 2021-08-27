@@ -183,6 +183,37 @@ int main(int argc, char* argv[])
             }
         }
 
+        getWindowSize(&s);
+        update_board(&s, &board);
+        grid_cell_size = s.window_size.h / (grid_size + 1);
+        blackb.w       = grid_cell_size;
+        blackb.h       = grid_cell_size;
+        blackb.x =
+            (s.window_size.h + ((s.window_size.w - s.window_size.h) / 3));
+        blackb.y = (s.window_size.h / (grid_size + 1)) * 3;
+
+        whiteb.w = grid_cell_size;
+        whiteb.h = grid_cell_size;
+        whiteb.x =
+            (s.window_size.h + ((s.window_size.w - s.window_size.h) / 3));
+        whiteb.y = (s.window_size.h / (grid_size + 1)) * 5;
+
+        black_sc_rect.w = grid_cell_size;
+        black_sc_rect.h = grid_cell_size;
+        black_sc_rect.x = (blackb.x + grid_cell_size * 2);
+        black_sc_rect.y = (blackb.y);
+
+        white_sc_rect.w = grid_cell_size;
+        white_sc_rect.h = grid_cell_size;
+        white_sc_rect.x = (whiteb.x + grid_cell_size * 2);
+        white_sc_rect.y = (whiteb.y);
+
+        reset_board_b.w = grid_cell_size * 4;
+        reset_board_b.h = grid_cell_size;
+        reset_board_b.x =
+            (s.window_size.h + ((s.window_size.w - s.window_size.h) / 6));
+        reset_board_b.y = (s.window_size.h / (grid_size + 1)) * 7;
+
         // Draw grid background.
         SDL_SetRenderDrawColor(app.renderer,
                                grid_background.r,
@@ -347,13 +378,10 @@ int main(int argc, char* argv[])
         // SDL_RenderSetScale(app.renderer, 1, 1);
         // SDL_RenderSetLogicalSize(
         //     app.renderer, s.display_mode.w, s.display_mode.h);
-        SDL_Rect r;
-        r.w = s.window_size.w;
-        r.h = s.window_size.h;
-        // printRect(-1, -1, r.w, r.h);
+        // SDL_Rect r;
+        // printRect(r.x, r.y, r.w, r.h);
         // printRect(s.window_size.w, s.window_size.h, 0, 0);
 
-        SDL_RenderSetLogicalSize(app.renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
         SDL_RenderCopy(
             app.renderer, gs.score.black_sc_texture, NULL, &black_sc_rect);
         SDL_RenderCopy(
@@ -385,6 +413,8 @@ void init_sdl(Settings* s)
     // Initialize window size
     s->window_size.w = s->display_mode.w;
     s->window_size.h = s->display_mode.h;
+    // Initialize ratio
+    s->aspect_ratio = (float)s->display_mode.w / (float)s->display_mode.h;
 
     app.window = SDL_CreateWindow("Go",
                                   SDL_WINDOWPOS_UNDEFINED,
@@ -498,6 +528,36 @@ void init_board(Settings* s, Board* board, int play_size)
     board->grid_cursor_ghost->cell_value = OOB;
     board->play_size                     = play_size;
 }
+
+void update_board(Settings* s, Board* board)
+{
+    int row            = 0;
+    int col            = 0;
+    int x              = 0;
+    int y              = 0;
+    int grid_size      = board->play_size + 1;
+    int grid_cell_size = s->window_size.h / (grid_size + 1);
+
+    while (row <= grid_size)
+    {
+        board->cell_array[row][col]->dims.w = grid_cell_size;
+        board->cell_array[row][col]->dims.h = grid_cell_size;
+        board->cell_array[row][col]->dims.x = x;
+        board->cell_array[row][col]->dims.y = y;
+
+        x += grid_cell_size;
+        col++;
+
+        if (col > grid_size)
+        {
+            col = 0;
+            x   = 0;
+            row++;
+            y += grid_cell_size;
+        }
+    }
+}
+
 void process_click_on_board(Settings* s, Board* board, GameState* gs,
                             SDL_MouseMotionEvent m)
 {
@@ -824,9 +884,9 @@ void getDisplayModes(Settings* s)
 void printRect(int x, int y, int w, int h)
 {
     if (x < 0 && y < 0)
-        printf("{w: %i, h: %i}", w, h);
+        printf("{w: %i, h: %i}\n", w, h);
     else
-        printf("{x: %i, y: %i, w: %i, h: %i}", x, y, w, h);
+        printf("{x: %i, y: %i, w: %i, h: %i}\n", x, y, w, h);
 }
 
 void getWindowSize(Settings* s)

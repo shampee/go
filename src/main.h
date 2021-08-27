@@ -14,6 +14,7 @@ SDL_Texture* get_text(const char* text, const char* font_path, int size,
 void init_board(Settings* s, Board* board, int play_size);
 void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
                      int col);
+void update_board(Settings* s, Board* board);
 void capture_stones(GameState* gs);
 int  check_for_suicide(Board* board, GameState* gs, int own_color, int row,
                        int col);
