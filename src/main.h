@@ -31,11 +31,11 @@ void process_mouse_over_board(Settings* s, Board* board,
 int is_cursor_within_board(Settings* s, SDL_MouseMotionEvent m);
 int is_cursor_within_button(SDL_MouseMotionEvent m, const SDL_Rect b);
 
-void getDisplayModes(Settings* s);
+void get_display_modes(Settings* s);
 
-void printDisplayMode(const SDL_DisplayMode* mode);
-void printRect(int x, int y, int w, int h);
-void getWindowSize(Settings* s);
+void print_display_mode(const SDL_DisplayMode* mode);
+void print_rect(int x, int y, int w, int h);
+void get_window_size(Settings* s);
 
 void mark_territory_of_dead_stones(Board* board, GameState* gs,
                                    int player_color);

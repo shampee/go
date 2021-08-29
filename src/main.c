@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 
     init_sdl(&s);
     SDL_SetWindowTitle(app.window, "Go");
-    printDisplayMode(&s.display_mode);
+    print_display_mode(&s.display_mode);
 
     // Should we move these initialisations into some function?
     Board board = {
@@ -211,7 +211,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        getWindowSize(&s);
+        get_window_size(&s);
         update_board(&s, &board);
         grid_cell_size = s.window_size.h / (grid_size + 1);
         blackb.w       = grid_cell_size;
@@ -469,7 +469,7 @@ void init_sdl(Settings* s)
         exit(1);
     }
     // We need functionality so we can choose, like a menu
-    getDisplayModes(s);
+    get_display_modes(s);
     s->display_mode = s->available_modes.modes[0];
 
     // Initialize window size
@@ -916,7 +916,7 @@ int is_cursor_within_button(const SDL_MouseMotionEvent m, const SDL_Rect b)
     return (m.x > b.x && m.y > b.y && m.x < (b.x + b.w) && m.y < (b.y + b.h));
 }
 
-void printDisplayMode(const SDL_DisplayMode* mode)
+void print_display_mode(const SDL_DisplayMode* mode)
 {
     printf("{bpp: %i, format: %s, w: %i, h: %i, hz: %i}\n",
            SDL_BITSPERPIXEL(mode->format),
@@ -928,7 +928,7 @@ void printDisplayMode(const SDL_DisplayMode* mode)
 
 // Fills up the s.available_modes.modes with all modes
 // available to the monitor that s.monitor is set to.
-void getDisplayModes(Settings* s)
+void get_display_modes(Settings* s)
 {
     int n = SDL_GetNumDisplayModes(s->monitor);
 
@@ -945,7 +945,7 @@ void getDisplayModes(Settings* s)
         s->available_modes.modes[i] = mode;
     }
 }
-void printRect(int x, int y, int w, int h)
+void print_rect(int x, int y, int w, int h)
 {
     if (x < 0 && y < 0)
         printf("{w: %i, h: %i}\n", w, h);
@@ -953,7 +953,7 @@ void printRect(int x, int y, int w, int h)
         printf("{x: %i, y: %i, w: %i, h: %i}\n", x, y, w, h);
 }
 
-void getWindowSize(Settings* s)
+void get_window_size(Settings* s)
 {
     // SDL_GL_GetDrawableSize(app.window, &s->window_size.w, &s->window_size.h);
     SDL_GetWindowSize(app.window, &s->window_size.w, &s->window_size.h);
