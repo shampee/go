@@ -461,7 +461,7 @@ void init_sdl(Settings* s)
 
     rendererFlags = SDL_RENDERER_ACCELERATED;
 
-    windowFlags = 0;
+    windowFlags = SDL_WINDOW_RESIZABLE;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -478,12 +478,8 @@ void init_sdl(Settings* s)
     // Initialize ratio
     s->aspect_ratio = (float)s->display_mode.w / (float)s->display_mode.h;
 
-    app.window = SDL_CreateWindow("Go",
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  SDL_WINDOWPOS_UNDEFINED,
-                                  s->display_mode.w,
-                                  s->display_mode.h,
-                                  windowFlags);
+    app.window = SDL_CreateWindow(
+        "Go", 0, 0, s->display_mode.w, s->display_mode.h, windowFlags);
 
     if (!app.window)
     {
