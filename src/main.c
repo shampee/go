@@ -660,12 +660,12 @@ void init_board(Settings* s, Board* board, int play_size)
 
         board->cell_array[row][col]->territory_value = NO_T;
 
-        board->cell_array[row][col]->dims.w                  = grid_cell_size;
-        board->cell_array[row][col]->dims.h                  = grid_cell_size;
-        board->cell_array[row][col]->dims.x                  = x;
-        board->cell_array[row][col]->dims.y                  = y;
-        board->cell_array[row][col]->scan_count              = 0;
-        board->cell_array[row][col]->liberty_cell_scan_count = 0;
+        board->cell_array[row][col]->dims.w                   = grid_cell_size;
+        board->cell_array[row][col]->dims.h                   = grid_cell_size;
+        board->cell_array[row][col]->dims.x                   = x;
+        board->cell_array[row][col]->dims.y                   = y;
+        board->cell_array[row][col]->has_cell_been_scanned    = NO;
+        board->cell_array[row][col]->has_liberty_been_scanned = NO;
 
         x += grid_cell_size;
         col++;
@@ -758,7 +758,8 @@ void process_click_on_board(Settings* s, Board* board, GameState* gs,
                                "previous move\n\n");
                         board->cell_array[row][col]->cell_value = EMPTY;
                         while (gs->capcount > 0)
-                            gs->stones_captured[gs->capcount--]->scan_count = 0;
+                            gs->stones_captured[gs->capcount--]
+                                ->has_cell_been_scanned = NO;
                         return;
                     }
 
@@ -788,7 +789,8 @@ void process_click_on_board(Settings* s, Board* board, GameState* gs,
                                "previous move\n\n");
                         board->cell_array[row][col]->cell_value = EMPTY;
                         while (gs->capcount > 0)
-                            gs->stones_captured[gs->capcount--]->scan_count = 0;
+                            gs->stones_captured[gs->capcount--]
+                                ->has_cell_been_scanned = NO;
                         return;
                     }
 
@@ -821,9 +823,9 @@ void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
                      int col)
 {
     if (board->cell_array[row][col]->cell_value == enemy_color &&
-        board->cell_array[row][col]->scan_count == 0)
+        board->cell_array[row][col]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row][col]->scan_count++;
+        board->cell_array[row][col]->has_cell_been_scanned = YES;
         gs->cells_scanned[++gs->count] = board->cell_array[row][col];
 
         scan_group_for_liberties(board, gs, enemy_color, row, col);
@@ -838,7 +840,7 @@ void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
         else if (gs->liberties != 0)
         {
             while (gs->count > 0)
-                gs->cells_scanned[gs->count--]->scan_count = 0;
+                gs->cells_scanned[gs->count--]->has_cell_been_scanned = NO;
             gs->liberties = 0;
         }
         reset_liberty_scan_count_for_all_cells(board, gs);
@@ -848,68 +850,60 @@ void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
 void scan_group_for_liberties(Board* board, GameState* gs, int target_color,
                               int row, int col)
 {
-    if (board->cell_array[row - 1][col]->cell_value == target_color)
+    if (board->cell_array[row - 1][col]->cell_value == target_color &&
+        board->cell_array[row - 1][col]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row - 1][col]->scan_count++;
-        if (board->cell_array[row - 1][col]->scan_count == 1)
-        {
-            gs->cells_scanned[++gs->count] = board->cell_array[row - 1][col];
-            scan_group_for_liberties(board, gs, target_color, row - 1, col);
-        }
+        board->cell_array[row - 1][col]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = board->cell_array[row - 1][col];
+        scan_group_for_liberties(board, gs, target_color, row - 1, col);
     }
-    else if (board->cell_array[row - 1][col]->cell_value == EMPTY)
+    else if (board->cell_array[row - 1][col]->cell_value == EMPTY &&
+             board->cell_array[row - 1][col]->has_liberty_been_scanned == NO)
     {
-        board->cell_array[row - 1][col]->liberty_cell_scan_count++;
-        if (board->cell_array[row - 1][col]->liberty_cell_scan_count == 1)
-            ++gs->liberties;
+        board->cell_array[row - 1][col]->has_liberty_been_scanned = YES;
+        ++gs->liberties;
     }
 
-    if (board->cell_array[row][col + 1]->cell_value == target_color)
+    if (board->cell_array[row][col + 1]->cell_value == target_color &&
+        board->cell_array[row][col + 1]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row][col + 1]->scan_count++;
-        if (board->cell_array[row][col + 1]->scan_count == 1)
-        {
-            gs->cells_scanned[++gs->count] = board->cell_array[row][col + 1];
-            scan_group_for_liberties(board, gs, target_color, row, col + 1);
-        }
+        board->cell_array[row][col + 1]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = board->cell_array[row][col + 1];
+        scan_group_for_liberties(board, gs, target_color, row, col + 1);
     }
-    else if (board->cell_array[row][col + 1]->cell_value == EMPTY)
+    else if (board->cell_array[row][col + 1]->cell_value == EMPTY &&
+             board->cell_array[row][col + 1]->has_liberty_been_scanned == NO)
     {
-        board->cell_array[row][col + 1]->liberty_cell_scan_count++;
-        if (board->cell_array[row][col + 1]->liberty_cell_scan_count == 1)
-            ++gs->liberties;
+        board->cell_array[row][col + 1]->has_liberty_been_scanned = YES;
+        ++gs->liberties;
     }
 
-    if (board->cell_array[row + 1][col]->cell_value == target_color)
+    if (board->cell_array[row + 1][col]->cell_value == target_color &&
+        board->cell_array[row + 1][col]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row + 1][col]->scan_count++;
-        if (board->cell_array[row + 1][col]->scan_count == 1)
-        {
-            gs->cells_scanned[++gs->count] = board->cell_array[row + 1][col];
-            scan_group_for_liberties(board, gs, target_color, row + 1, col);
-        }
+        board->cell_array[row + 1][col]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = board->cell_array[row + 1][col];
+        scan_group_for_liberties(board, gs, target_color, row + 1, col);
     }
-    else if (board->cell_array[row + 1][col]->cell_value == EMPTY)
+    else if (board->cell_array[row + 1][col]->cell_value == EMPTY &&
+             board->cell_array[row + 1][col]->has_liberty_been_scanned == NO)
     {
-        board->cell_array[row + 1][col]->liberty_cell_scan_count++;
-        if (board->cell_array[row + 1][col]->liberty_cell_scan_count == 1)
-            ++gs->liberties;
+        board->cell_array[row + 1][col]->has_liberty_been_scanned = YES;
+        ++gs->liberties;
     }
 
-    if (board->cell_array[row][col - 1]->cell_value == target_color)
+    if (board->cell_array[row][col - 1]->cell_value == target_color &&
+        board->cell_array[row][col - 1]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row][col - 1]->scan_count++;
-        if (board->cell_array[row][col - 1]->scan_count == 1)
-        {
-            gs->cells_scanned[++gs->count] = board->cell_array[row][col - 1];
-            scan_group_for_liberties(board, gs, target_color, row, col - 1);
-        }
+        board->cell_array[row][col - 1]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = board->cell_array[row][col - 1];
+        scan_group_for_liberties(board, gs, target_color, row, col - 1);
     }
-    else if (board->cell_array[row][col - 1]->cell_value == EMPTY)
+    else if (board->cell_array[row][col - 1]->cell_value == EMPTY &&
+             board->cell_array[row][col - 1]->has_liberty_been_scanned == NO)
     {
-        board->cell_array[row][col - 1]->liberty_cell_scan_count++;
-        if (board->cell_array[row][col - 1]->liberty_cell_scan_count == 1)
-            ++gs->liberties;
+        board->cell_array[row][col - 1]->has_liberty_been_scanned = YES;
+        ++gs->liberties;
     }
 }
 
@@ -921,8 +915,8 @@ void capture_stones(GameState* gs)
         gs->score.white_score += gs->capcount;
     while (gs->capcount > 0)
     {
-        gs->stones_captured[gs->capcount]->cell_value = EMPTY;
-        gs->stones_captured[gs->capcount]->scan_count = 0;
+        gs->stones_captured[gs->capcount]->cell_value            = EMPTY;
+        gs->stones_captured[gs->capcount]->has_cell_been_scanned = NO;
         --gs->capcount;
     }
 }
@@ -959,13 +953,13 @@ int check_for_suicide(Board* board, GameState* gs, int own_color, int row,
                "0, or otherwise place a stone where there are no liberties for "
                "it\n\n");
         while (gs->count > 0)
-            gs->cells_scanned[gs->count--]->scan_count = 0;
+            gs->cells_scanned[gs->count--]->has_cell_been_scanned = NO;
         return !OK;
     }
     else
     {
         while (gs->count > 0)
-            gs->cells_scanned[gs->count--]->scan_count = 0;
+            gs->cells_scanned[gs->count--]->has_cell_been_scanned = NO;
         gs->liberties = 0;
         reset_liberty_scan_count_for_all_cells(board, gs);
         return OK;
@@ -983,8 +977,9 @@ void reset_board(Board* board, GameState* gs)
         if (board->cell_array[row][col]->cell_value == BLACK ||
             board->cell_array[row][col]->cell_value == WHITE)
             board->cell_array[row][col]->cell_value = EMPTY;
-        board->cell_array[row][col]->territory_value = NO_T;
-        board->cell_array[row][col]->scan_count      = 0;
+        board->cell_array[row][col]->territory_value          = NO_T;
+        board->cell_array[row][col]->has_cell_been_scanned    = NO;
+        board->cell_array[row][col]->has_liberty_been_scanned = NO;
         col++;
         if (col > grid_size)
         {
@@ -1093,9 +1088,9 @@ void mark_territory_of_dead_stones(Board* board, GameState* gs,
     while (row <= grid_size)
     {
         if (board->cell_array[row][col]->cell_value == player_color &&
-            board->cell_array[row][col]->scan_count == 0)
+            board->cell_array[row][col]->has_cell_been_scanned == NO)
         {
-            board->cell_array[row][col]->scan_count++;
+            board->cell_array[row][col]->has_cell_been_scanned = YES;
             gs->cells_scanned[++gs->count] = board->cell_array[row][col];
 
             scan_group_for_liberties(board, gs, player_color, row, col);
@@ -1134,7 +1129,7 @@ void reset_scan_count_for_all_cells(Board* board, GameState* gs)
 
     while (row <= grid_size)
     {
-        board->cell_array[row][col]->scan_count = 0;
+        board->cell_array[row][col]->has_cell_been_scanned = NO;
         col++;
         if (col > grid_size)
         {
@@ -1152,7 +1147,7 @@ void reset_liberty_scan_count_for_all_cells(Board* board, GameState* gs)
 
     while (row <= grid_size)
     {
-        board->cell_array[row][col]->liberty_cell_scan_count = 0;
+        board->cell_array[row][col]->has_liberty_been_scanned = NO;
         col++;
         if (col > grid_size)
         {
@@ -1171,9 +1166,9 @@ void determine_territory(Board* board, GameState* gs, EndScore* es)
     while (row <= grid_size)
     {
         if (board->cell_array[row][col]->cell_value == EMPTY &&
-            board->cell_array[row][col]->scan_count == 0)
+            board->cell_array[row][col]->has_cell_been_scanned == NO)
         {
-            board->cell_array[row][col]->scan_count++;
+            board->cell_array[row][col]->has_cell_been_scanned = YES;
             gs->cells_scanned[++gs->count] = board->cell_array[row][col];
 
             scan_empty_cells_for_ownership(board, gs, es, row, col);
@@ -1212,9 +1207,9 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
         board->cell_array[row - 1][col]->territory_value == BLACK_T ||
         board->cell_array[row - 1][col]->territory_value == WHITE_T)
     {
-        board->cell_array[row - 1][col]->scan_count++;
-        if (board->cell_array[row - 1][col]->scan_count == 1)
+        if (board->cell_array[row - 1][col]->has_cell_been_scanned == NO)
         {
+            board->cell_array[row - 1][col]->has_cell_been_scanned = YES;
             gs->cells_scanned[++gs->count] = board->cell_array[row - 1][col];
             scan_empty_cells_for_ownership(board, gs, es, row - 1, col);
         }
@@ -1227,10 +1222,11 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
     if (board->cell_array[row][col + 1]->cell_value == EMPTY ||
         board->cell_array[row][col + 1]->territory_value == BLACK_T ||
         board->cell_array[row][col + 1]->territory_value == WHITE_T)
+
     {
-        board->cell_array[row][col + 1]->scan_count++;
-        if (board->cell_array[row][col + 1]->scan_count == 1)
+        if (board->cell_array[row][col + 1]->has_cell_been_scanned == NO)
         {
+            board->cell_array[row][col + 1]->has_cell_been_scanned = YES;
             gs->cells_scanned[++gs->count] = board->cell_array[row][col + 1];
             scan_empty_cells_for_ownership(board, gs, es, row, col + 1);
         }
@@ -1243,10 +1239,11 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
     if (board->cell_array[row + 1][col]->cell_value == EMPTY ||
         board->cell_array[row + 1][col]->territory_value == BLACK_T ||
         board->cell_array[row + 1][col]->territory_value == WHITE_T)
+
     {
-        board->cell_array[row + 1][col]->scan_count++;
-        if (board->cell_array[row + 1][col]->scan_count == 1)
+        if (board->cell_array[row + 1][col]->has_cell_been_scanned == NO)
         {
+            board->cell_array[row + 1][col]->has_cell_been_scanned = YES;
             gs->cells_scanned[++gs->count] = board->cell_array[row + 1][col];
             scan_empty_cells_for_ownership(board, gs, es, row + 1, col);
         }
@@ -1259,10 +1256,11 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
     if (board->cell_array[row][col - 1]->cell_value == EMPTY ||
         board->cell_array[row][col - 1]->territory_value == BLACK_T ||
         board->cell_array[row][col - 1]->territory_value == WHITE_T)
+
     {
-        board->cell_array[row][col - 1]->scan_count++;
-        if (board->cell_array[row][col - 1]->scan_count == 1)
+        if (board->cell_array[row][col - 1]->has_cell_been_scanned == NO)
         {
+            board->cell_array[row][col - 1]->has_cell_been_scanned = YES;
             gs->cells_scanned[++gs->count] = board->cell_array[row][col - 1];
             scan_empty_cells_for_ownership(board, gs, es, row, col - 1);
         }

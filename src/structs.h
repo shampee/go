@@ -9,8 +9,8 @@ typedef struct
 {
     SDL_Rect dims;
     int      cell_value;
-    int      scan_count;
-    int      liberty_cell_scan_count;
+    int      has_cell_been_scanned;
+    int      has_liberty_been_scanned;
     int      territory_value;
     char     position_str[3];
 } Cell;
