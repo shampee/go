@@ -20,6 +20,8 @@ int  check_for_suicide(Board* board, GameState* gs, int own_color, int row,
                        int col);
 void scan_group_for_liberties(Board* board, GameState* gs, int enemy_color,
                               int row, int col);
+void reset_liberty_scan_count_for_all_cells(Board* board, GameState* gs);
+
 void process_click_on_board(Settings* s, Board* board, GameState* gs,
                             SDL_MouseMotionEvent m);
 void get_score_text_black(GameState* gs);

@@ -10,6 +10,7 @@ typedef struct
     SDL_Rect dims;
     int      cell_value;
     int      scan_count;
+    int      liberty_cell_scan_count;
     int      territory_value;
     char     position_str[3];
 } Cell;
