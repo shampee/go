@@ -173,8 +173,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    place_on_pos(&gs, &board, "A8");
-
     // load image for dot
     SDL_Texture* dot_image;
     dot_image = get_image("dot.png", app.renderer);
