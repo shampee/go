@@ -173,6 +173,8 @@ int main(int argc, char* argv[])
         }
     }
 
+    place_on_pos(&gs, &board, "A8");
+
     // load image for dot
     SDL_Texture* dot_image;
     dot_image = get_image("dot.png", app.renderer);
@@ -1229,34 +1231,28 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
 
 void place_on_pos(GameState* gs, Board* board, const char* pos)
 {
-    int row       = 0;
-    int col       = 0;
-    int grid_size = board->play_size + 1;
-    while (row <= grid_size - 1)
-    {
-        if (board->cell_array[row][col]->cell_value == EMPTY)
+    for (int i = 0; i < board->play_size + 1; i++)
+        for (int j = 0; j < board->play_size + 1; j++)
         {
-            if (strcmp(board->cell_array[row][col]->position_str, pos) == 0)
             {
-                switch (gs->turn)
+                if (board->cell_array[j][i]->cell_value == EMPTY)
                 {
-                case BLACK:
-                    board->cell_array[col][row]->cell_value = BLACK;
-                    break;
-                case WHITE:
-                    board->cell_array[col][row]->cell_value = WHITE;
-                    break;
+                    if (strcmp(board->cell_array[j][i]->position_str, pos) == 0)
+                    {
+                        switch (gs->turn)
+                        {
+                        case BLACK:
+                            board->cell_array[j][i]->cell_value = BLACK;
+                            break;
+                        case WHITE:
+                            board->cell_array[j][i]->cell_value = WHITE;
+                            break;
+                        }
+                        printf("Placed stone on %s.\n", pos);
+                    }
                 }
-                printf("Placed stone on %s.\n", pos);
             }
         }
-        col++;
-        if (col > grid_size)
-        {
-            col = 0;
-            row++;
-        }
-    }
 }
 
 void* host(void* gs)
