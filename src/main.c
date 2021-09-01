@@ -730,11 +730,6 @@ void process_click_on_board(Settings* s, Board* board, GameState* gs,
         {
             if (board->cell_array[row][col]->cell_value == EMPTY)
             {
-                printf("cell_array[%d][%d]->position_str = %s\n",
-                       row,
-                       col,
-                       board->cell_array[row][col]->position_str);
-
                 if (gs->turn == BLACK)
                 {
                     board->cell_array[row][col]->cell_value = BLACK;
