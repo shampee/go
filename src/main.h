@@ -2,7 +2,7 @@
 
 enum { EMPTY, BLACK, WHITE, OOB, OK, YES, NO, BLACK_T, WHITE_T, NO_T };
 
-void init_sdl(Settings* s);
+void init_sdl(Settings* s, GameState* gs, char argc, char* argv[]);
 void cleanup(void);
 
 Cell* cell_create(void);
@@ -46,3 +46,7 @@ void determine_territory(Board* board, GameState* gs, EndScore* es);
 
 void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
                                     int row, int col);
+
+void  place_on_pos(GameState* s, Board* board, const char* pos);
+void* host(void* vargp);
+void* join(void* vargp);

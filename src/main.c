@@ -7,10 +7,6 @@ int main(int argc, char* argv[])
         .monitor = 0,
     };
 
-    init_sdl(&s);
-    SDL_SetWindowTitle(app.window, "Go");
-    print_display_mode(&s.display_mode);
-
     // Should we move these initialisations into some function?
     Board board = {
         .cell_array        = { { NULL } },
@@ -34,11 +30,16 @@ int main(int argc, char* argv[])
                          .white_sc_str     = { '\0' },
                          .black_score      = 0,
                          .white_score      = 0,
-                     } };
+                     },
+                     .hosting = SDL_FALSE,
+    };
 
     EndScore es = { .empty_cells_next_to_black = 0,
                     .empty_cells_next_to_white = 0 };
 
+    init_sdl(&s, &gs, argc, argv);
+    SDL_SetWindowTitle(app.window, "Go");
+    print_display_mode(&s.display_mode);
     atexit(cleanup);
 
     int grid_size      = board.play_size + 1;
@@ -48,6 +49,8 @@ int main(int argc, char* argv[])
     int col = 0;
 
     init_board(&s, &board, board.play_size);
+    // Dirty
+    gs.board = board;
 
     // Colors
     SDL_Color grid_background         = { 222, 184, 135, 255 };
@@ -153,6 +156,23 @@ int main(int argc, char* argv[])
                                         app.renderer);
     }
 
+    alphabet_char = 'A';
+    alphabet_char--;
+    for (int i = 0; i < board.play_size + 1; alphabet_char++, i++)
+    {
+        for (int j = 0; j < board.play_size + 1; num_char--, j++)
+        {
+            sprintf(board.cell_array[j][i]->position_str,
+                    "%c%d",
+                    alphabet_char,
+                    num_char);
+            if (j == 9)
+            {
+                num_char = board.play_size + 2;
+            }
+        }
+    }
+
     // load image for dot
     SDL_Texture* dot_image;
     dot_image = get_image("dot.png", app.renderer);
@@ -213,6 +233,29 @@ int main(int argc, char* argv[])
 
         get_window_size(&s);
         update_board(&s, &board);
+        // Dirty
+        gs.board = board;
+        switch (gs.state)
+        {
+        case MENU:
+            break;
+        case HOST: {
+            if (!gs.hosting)
+            {
+                pthread_t tid;
+                pthread_create(&tid, NULL, host, &gs);
+                gs.hosting = SDL_TRUE;
+            }
+            break;
+        }
+        case JOIN: {
+            // pthread_t tid;
+            // join(&gs);
+            break;
+        }
+        case PLAY:
+            break;
+        }
         grid_cell_size = s.window_size.h / (grid_size + 1);
         blackb.w       = grid_cell_size;
         blackb.h       = grid_cell_size;
@@ -455,7 +498,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void init_sdl(Settings* s)
+void init_sdl(Settings* s, GameState* gs, char argc, char* argv[])
 {
     int rendererFlags, windowFlags;
 
@@ -506,6 +549,52 @@ void init_sdl(Settings* s)
     //Initialize support for fonts
     TTF_Init();
 
+    //Initialize net
+    if (SDLNet_Init() < 0)
+    {
+        printf("Failed to initialize SDLNet: %s\n", SDLNet_GetError());
+        exit(1);
+    }
+    if (argc > 1)
+    {
+        gs->game_mode = REGULAR;
+        if (strcmp(argv[1], "host") == 0)
+        {
+            gs->state = HOST;
+            printf("Host mode\n");
+        }
+        else if (strcmp(argv[1], "join") == 0)
+        {
+            gs->state = JOIN;
+            printf("Join mode\n");
+        }
+        // Get port from argv
+        if (argc > 2)
+            gs->net.port = (Uint16)strtol(argv[2], NULL, 0);
+        else
+            // Default port
+            gs->net.port = (Uint16)7777;
+
+        if (SDLNet_ResolveHost(&gs->net.ip, NULL, gs->net.port) < 0)
+        {
+            printf("SDLNet_ResolveHost: %s\n", SDLNet_GetError());
+            exit(1);
+        }
+        printf("IP: %d, Port: %d", gs->net.ip.host, gs->net.ip.port);
+        if (gs->state == HOST)
+            gs->net.server = SDLNet_TCP_Open(&gs->net.ip);
+        if (!gs->net.server)
+        {
+            printf("SDLNet_TCP_Open: %s\n", SDLNet_GetError());
+            exit(1);
+        }
+    }
+    else
+    {
+        gs->game_mode = DEBUG;
+        printf("Debug mode\n");
+    }
+
     // For having semi-transparent things rendered
     SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_BLEND);
 }
@@ -519,6 +608,8 @@ void cleanup(void)
     IMG_Quit();
 
     TTF_Quit();
+
+    SDLNet_Quit();
 
     SDL_Quit();
 }
@@ -638,11 +729,17 @@ void process_click_on_board(Settings* s, Board* board, GameState* gs,
         {
             if (board->cell_array[row][col]->cell_value == EMPTY)
             {
+                printf("cell_array[%d][%d]->position_str = %s\n",
+                       row,
+                       col,
+                       board->cell_array[row][col]->position_str);
+
                 if (gs->turn == BLACK)
                 {
                     board->cell_array[row][col]->cell_value = BLACK;
                     gs->stones_to_capture                   = NO;
-                    // scans the enemy group (if there is one) for liberties directly above the placed black stone
+                    // scans the enemy group (if there is one)
+                    // for liberties directly above the placed black stone
                     init_scan_enemy(board, gs, WHITE, row - 1, col);
                     // scans the enemy group directly to the right of the placed black stone
                     init_scan_enemy(board, gs, WHITE, row, col + 1);
@@ -713,10 +810,12 @@ void process_click_on_board(Settings* s, Board* board, GameState* gs,
     }
 }
 
-/*	init_scan_enemy: the first stone needs to be scanned before scan_group_for_liberties scans all of the stones of the same color that are connected to the first stone,
-	the address of all cells of the stones in the group are stored in the cells_scanned array, which will later be used to remove (if no liberties are found) the
-	stones off of the board, by changing the cell value of each cell to EMPTY
-*/
+// The first stone needs to be scanned before scan_group_for_liberties
+// scans all of the stones of the same color that are connected to the first stone,
+// the address of all cells of the stones in the group are stored in
+// the cells_scanned array, which will later be used to remove the
+// stones off of the board (if no liberties are found),
+// by changing the cell value of each cell to EMPTY
 void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
                      int col)
 {
@@ -1126,4 +1225,91 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
         ++es->empty_cells_next_to_black;
     else if (board->cell_array[row][col - 1]->cell_value == WHITE)
         ++es->empty_cells_next_to_white;
+}
+
+void place_on_pos(GameState* gs, Board* board, const char* pos)
+{
+    int row       = 0;
+    int col       = 0;
+    int grid_size = board->play_size + 1;
+    while (row <= grid_size - 1)
+    {
+        if (board->cell_array[row][col]->cell_value == EMPTY)
+        {
+            if (strcmp(board->cell_array[row][col]->position_str, pos) == 0)
+            {
+                switch (gs->turn)
+                {
+                case BLACK:
+                    board->cell_array[col][row]->cell_value = BLACK;
+                    break;
+                case WHITE:
+                    board->cell_array[col][row]->cell_value = WHITE;
+                    break;
+                }
+                printf("Placed stone on %s.\n", pos);
+            }
+        }
+        col++;
+        if (col > grid_size)
+        {
+            col = 0;
+            row++;
+        }
+    }
+}
+
+void* host(void* gs)
+{
+    pthread_mutex_lock(&((GameState*)gs)->mutex);
+    char     message[4];
+    int      len;
+    SDL_bool got_client = SDL_FALSE;
+    printf("Waiting for a client to connect...\n");
+    while (1)
+    {
+        if (!got_client)
+        {
+            ((GameState*)gs)->net.client =
+                SDLNet_TCP_Accept(((GameState*)gs)->net.server);
+            if (!((GameState*)gs)->net.client)
+            {
+                SDL_Delay(100);
+                continue;
+            }
+            ((GameState*)gs)->net.remote_ip =
+                *SDLNet_TCP_GetPeerAddress(((GameState*)gs)->net.client);
+            // FIX: this
+            if (((GameState*)gs)->net.remote_ip.host == 0 &&
+                ((GameState*)gs)->net.remote_ip.port == 0)
+            {
+                printf("SDLNet_TCP_GetPeerAddress %s\n", SDLNet_GetError());
+            }
+
+            ((GameState*)gs)->net.ipaddr =
+                SDL_SwapBE32(((GameState*)gs)->net.remote_ip.host);
+            printf("Accepted a connection from %d.%d.%d.%d port %hu\n",
+                   ((GameState*)gs)->net.ipaddr >> 24,
+                   (((GameState*)gs)->net.ipaddr >> 16) & 0xff,
+                   (((GameState*)gs)->net.ipaddr >> 8) & 0xff,
+                   ((GameState*)gs)->net.ipaddr & 0xff,
+                   ((GameState*)gs)->net.remote_ip.port);
+
+            got_client = SDL_TRUE;
+            continue;
+        }
+
+        len = SDLNet_TCP_Recv(((GameState*)gs)->net.client, message, 4);
+
+        // For debugging
+        char* buf = malloc(len - 1);
+        buf[0]    = message[0];
+        buf[1]    = message[1];
+        if (len == 4)
+            buf[2] = message[2];
+        printf("Received: %s\n", buf);
+        place_on_pos(((GameState*)gs), &((GameState*)gs)->board, buf);
+        free(buf);
+    }
+    pthread_mutex_unlock(&((GameState*)gs)->mutex);
 }

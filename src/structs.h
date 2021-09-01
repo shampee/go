@@ -11,6 +11,7 @@ typedef struct
     int      cell_value;
     int      scan_count;
     int      territory_value;
+    char     position_str[3];
 } Cell;
 
 typedef struct
@@ -32,18 +33,35 @@ typedef struct
     SDL_Color    white;
 } Score;
 
+typedef enum { DEBUG, REGULAR } GameMode;
+typedef enum { MENU, HOST, JOIN, PLAY } State;
 typedef struct
 {
-    int   liberties;
-    Cell* cells_scanned[MAXGRIDSIZE * MAXGRIDSIZE];
-    Cell* stones_captured[MAXGRIDSIZE * MAXGRIDSIZE];
-    int   count;
-    int   capcount;
-    Cell* ko_rule_black;
-    Cell* ko_rule_white;
-    int   stones_to_capture;
-    int   turn;
-    Score score;
+    int             liberties;
+    Cell*           cells_scanned[MAXGRIDSIZE * MAXGRIDSIZE];
+    Cell*           stones_captured[MAXGRIDSIZE * MAXGRIDSIZE];
+    int             count;
+    int             capcount;
+    Cell*           ko_rule_black;
+    Cell*           ko_rule_white;
+    int             stones_to_capture;
+    int             turn;
+    Board           board;
+    Score           score;
+    GameMode        game_mode;
+    State           state;
+    SDL_bool        hosting;
+    pthread_mutex_t mutex;
+    struct
+    {
+        IPaddress ip;
+        IPaddress remote_ip;
+        TCPsocket client;
+        TCPsocket server;
+        Uint32    ipaddr;
+        Uint16    port;
+
+    } net;
 } GameState;
 
 typedef struct
