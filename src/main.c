@@ -207,8 +207,7 @@ int main(int argc, char* argv[])
                 else if (is_cursor_within_button(event.motion,
                                                  calc_territory_b))
                 {
-                    mark_territory_of_dead_stones(&board, &gs, &es, BLACK);
-                    mark_territory_of_dead_stones(&board, &gs, &es, WHITE);
+                    mark_dead_stones(&board, &gs, &es);
                     determine_territory(&board, &gs, &es);
                 }
                 break;
@@ -1067,85 +1066,213 @@ void get_window_size(Settings* s)
     SDL_GetWindowSize(app.window, &s->window_size.w, &s->window_size.h);
 }
 
-void mark_territory_of_dead_stones(Board* board, GameState* gs, EndScore* es,
-                                   int stone_color)
+void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
 {
-    int   row       = 0;
-    int   col       = 0;
-    int   grid_size = board->play_size + 1;
-    int   mark_color;
-    int   territory_color;
+    int row       = 0;
+    int col       = 0;
+    int grid_size = board->play_size + 1;
+    int mark_color;
+    int territory_color;
+
+    int loop_counter = 2;
+    int stone_color  = BLACK;
+
+    while (loop_counter > 0)
+    {
+        if (stone_color == BLACK)
+            mark_color = WHITE_T;
+        if (stone_color == WHITE)
+            mark_color = BLACK_T;
+        row = 0;
+        col = 0;
+
+        while (row <= grid_size)
+        {
+            if (board->cell_array[row][col]->cell_value == stone_color &&
+                board->cell_array[row][col]->has_cell_been_scanned == NO)
+            {
+                board->cell_array[row][col]->has_cell_been_scanned = YES;
+                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+
+                scan_group_for_liberties(board, gs, stone_color, row, col);
+
+                if (gs->liberties == 1)
+                {
+                    while (gs->count > 0)
+                        gs->cells_scanned[gs->count--]->territory_value =
+                            mark_color;
+                }
+                gs->liberties                 = 0;
+                gs->count                     = 0;
+                es->empty_cells_next_to_black = 0;
+                es->empty_cells_next_to_white = 0;
+                reset_liberty_scan_count_for_all_cells(board, gs);
+            }
+
+            col++;
+
+            if (col > grid_size)
+            {
+                col = 0;
+                row++;
+            }
+        }
+        reset_scan_count_for_all_cells(board, gs);
+        stone_color = WHITE;
+        --loop_counter;
+    }
+
+    loop_counter = 2;
+    stone_color  = BLACK;
     int   count_storage;
     Cell* cell_storage[5];
     int   i = 0;
 
-    if (stone_color == BLACK)
-        mark_color = WHITE_T;
-    if (stone_color == WHITE)
-        mark_color = BLACK_T;
-
-    while (row <= grid_size)
+    while (loop_counter > 0)
     {
-        if (board->cell_array[row][col]->cell_value == stone_color &&
-            board->cell_array[row][col]->has_cell_been_scanned == NO)
+        if (stone_color == BLACK)
+            mark_color = WHITE_T;
+        if (stone_color == WHITE)
+            mark_color = BLACK_T;
+
+        row = 0;
+        col = 0;
+        i   = 0;
+
+        while (row <= grid_size)
         {
-            board->cell_array[row][col]->has_cell_been_scanned = YES;
-            gs->cells_scanned[++gs->count] = board->cell_array[row][col];
-
-            scan_group_for_liberties(board, gs, stone_color, row, col);
-
-            if (gs->liberties == 1)
+            if (board->cell_array[row][col]->cell_value == stone_color &&
+                board->cell_array[row][col]->has_cell_been_scanned == NO)
             {
-                while (gs->count > 0)
-                    gs->cells_scanned[gs->count--]->territory_value =
-                        mark_color;
-            }
-            else if (gs->count == 1 || gs->count == 2)
-            {
-                count_storage = gs->count;
-                while (gs->count > 0)
+                board->cell_array[row][col]->has_cell_been_scanned = YES;
+                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+
+                scan_group_for_liberties(board, gs, stone_color, row, col);
+
+                if (gs->count == 2)
                 {
-                    cell_storage[++i] = gs->cells_scanned[gs->count];
-                    gs->cells_scanned[gs->count]->cell_value = EMPTY;
-                    --gs->count;
-                }
+                    count_storage = gs->count;
+                    while (gs->count > 0)
+                    {
+                        cell_storage[++i] = gs->cells_scanned[gs->count];
+                        gs->cells_scanned[gs->count]->cell_value = EMPTY;
+                        --gs->count;
+                    }
 
-                scan_empty_cells_for_ownership(board, gs, es, row, col);
+                    scan_empty_cells_for_ownership(board, gs, es, row, col);
 
-                if (es->empty_cells_next_to_black >
-                    es->empty_cells_next_to_white)
-                    territory_color = BLACK;
-                else if (es->empty_cells_next_to_black <
-                         es->empty_cells_next_to_white)
-                    territory_color = WHITE;
+                    if (es->empty_cells_next_to_black >
+                        es->empty_cells_next_to_white)
+                        territory_color = BLACK;
+                    else if (es->empty_cells_next_to_black <
+                             es->empty_cells_next_to_white)
+                        territory_color = WHITE;
 
-                if (stone_color != territory_color)
-                {
+                    if (stone_color != territory_color)
+                    {
+                        while (i > 0)
+                            cell_storage[i--]->territory_value = mark_color;
+                        i = count_storage;
+                    }
+
                     while (i > 0)
-                        cell_storage[i--]->territory_value = mark_color;
-                    i = count_storage;
+                        cell_storage[i--]->cell_value = stone_color;
                 }
 
-                while (i > 0)
-                    cell_storage[i--]->cell_value = stone_color;
+                gs->liberties                 = 0;
+                gs->count                     = 0;
+                es->empty_cells_next_to_black = 0;
+                es->empty_cells_next_to_white = 0;
+                reset_liberty_scan_count_for_all_cells(board, gs);
             }
 
-            gs->liberties                 = 0;
-            gs->count                     = 0;
-            es->empty_cells_next_to_black = 0;
-            es->empty_cells_next_to_white = 0;
-            reset_liberty_scan_count_for_all_cells(board, gs);
-        }
+            col++;
 
-        col++;
-
-        if (col > grid_size)
-        {
-            col = 0;
-            row++;
+            if (col > grid_size)
+            {
+                col = 0;
+                row++;
+            }
         }
+        reset_scan_count_for_all_cells(board, gs);
+        stone_color = WHITE;
+        --loop_counter;
     }
-    reset_scan_count_for_all_cells(board, gs);
+
+    loop_counter = 2;
+    stone_color  = BLACK;
+    i            = 0;
+
+    while (loop_counter > 0)
+    {
+        if (stone_color == BLACK)
+            mark_color = WHITE_T;
+        if (stone_color == WHITE)
+            mark_color = BLACK_T;
+
+        row = 0;
+        col = 0;
+        i   = 0;
+
+        while (row <= grid_size)
+        {
+            if (board->cell_array[row][col]->cell_value == stone_color &&
+                board->cell_array[row][col]->has_cell_been_scanned == NO)
+            {
+                board->cell_array[row][col]->has_cell_been_scanned = YES;
+                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+
+                scan_group_for_liberties(board, gs, stone_color, row, col);
+
+                if (gs->count == 1)
+                {
+                    count_storage = gs->count;
+                    while (gs->count > 0)
+                    {
+                        cell_storage[++i] = gs->cells_scanned[gs->count];
+                        gs->cells_scanned[gs->count]->cell_value = EMPTY;
+                        --gs->count;
+                    }
+
+                    scan_empty_cells_for_ownership(board, gs, es, row, col);
+
+                    if (es->empty_cells_next_to_black >
+                        es->empty_cells_next_to_white)
+                        territory_color = BLACK;
+                    else if (es->empty_cells_next_to_black <
+                             es->empty_cells_next_to_white)
+                        territory_color = WHITE;
+
+                    if (stone_color != territory_color)
+                    {
+                        while (i > 0)
+                            cell_storage[i--]->territory_value = mark_color;
+                        i = count_storage;
+                    }
+
+                    while (i > 0)
+                        cell_storage[i--]->cell_value = stone_color;
+                }
+
+                gs->liberties                 = 0;
+                gs->count                     = 0;
+                es->empty_cells_next_to_black = 0;
+                es->empty_cells_next_to_white = 0;
+                reset_liberty_scan_count_for_all_cells(board, gs);
+            }
+
+            col++;
+
+            if (col > grid_size)
+            {
+                col = 0;
+                row++;
+            }
+        }
+        reset_scan_count_for_all_cells(board, gs);
+        stone_color = WHITE;
+        --loop_counter;
+    }
 }
 
 void reset_scan_count_for_all_cells(Board* board, GameState* gs)
