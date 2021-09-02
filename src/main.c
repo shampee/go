@@ -207,8 +207,8 @@ int main(int argc, char* argv[])
                 else if (is_cursor_within_button(event.motion,
                                                  calc_territory_b))
                 {
-                    mark_territory_of_dead_stones(&board, &gs, BLACK);
-                    mark_territory_of_dead_stones(&board, &gs, WHITE);
+                    mark_territory_of_dead_stones(&board, &gs, &es, BLACK);
+                    mark_territory_of_dead_stones(&board, &gs, &es, WHITE);
                     determine_territory(&board, &gs, &es);
                 }
                 break;
@@ -1067,41 +1067,73 @@ void get_window_size(Settings* s)
     SDL_GetWindowSize(app.window, &s->window_size.w, &s->window_size.h);
 }
 
-void mark_territory_of_dead_stones(Board* board, GameState* gs,
-                                   int player_color)
+void mark_territory_of_dead_stones(Board* board, GameState* gs, EndScore* es,
+                                   int stone_color)
 {
-    int row       = 0;
-    int col       = 0;
-    int grid_size = board->play_size + 1;
-    int territory_color;
+    int   row       = 0;
+    int   col       = 0;
+    int   grid_size = board->play_size + 1;
+    int   mark_color;
+    int   territory_color;
+    int   count_storage;
+    Cell* cell_storage[5];
+    int   i = 0;
 
-    if (player_color == BLACK)
-        territory_color = WHITE_T;
-    if (player_color == WHITE)
-        territory_color = BLACK_T;
+    if (stone_color == BLACK)
+        mark_color = WHITE_T;
+    if (stone_color == WHITE)
+        mark_color = BLACK_T;
 
     while (row <= grid_size)
     {
-        if (board->cell_array[row][col]->cell_value == player_color &&
+        if (board->cell_array[row][col]->cell_value == stone_color &&
             board->cell_array[row][col]->has_cell_been_scanned == NO)
         {
             board->cell_array[row][col]->has_cell_been_scanned = YES;
             gs->cells_scanned[++gs->count] = board->cell_array[row][col];
 
-            scan_group_for_liberties(board, gs, player_color, row, col);
+            scan_group_for_liberties(board, gs, stone_color, row, col);
 
             if (gs->liberties == 1)
             {
                 while (gs->count > 0)
                     gs->cells_scanned[gs->count--]->territory_value =
-                        territory_color;
-                gs->liberties = 0;
+                        mark_color;
             }
-            else if (gs->liberties != 0)
+            else if (gs->count == 1 || gs->count == 2)
             {
-                gs->count     = 0;
-                gs->liberties = 0;
+                count_storage = gs->count;
+                while (gs->count > 0)
+                {
+                    cell_storage[++i] = gs->cells_scanned[gs->count];
+                    gs->cells_scanned[gs->count]->cell_value = EMPTY;
+                    --gs->count;
+                }
+
+                scan_empty_cells_for_ownership(board, gs, es, row, col);
+
+                if (es->empty_cells_next_to_black >
+                    es->empty_cells_next_to_white)
+                    territory_color = BLACK;
+                else if (es->empty_cells_next_to_black <
+                         es->empty_cells_next_to_white)
+                    territory_color = WHITE;
+
+                if (stone_color != territory_color)
+                {
+                    while (i > 0)
+                        cell_storage[i--]->territory_value = mark_color;
+                    i = count_storage;
+                }
+
+                while (i > 0)
+                    cell_storage[i--]->cell_value = stone_color;
             }
+
+            gs->liberties                 = 0;
+            gs->count                     = 0;
+            es->empty_cells_next_to_black = 0;
+            es->empty_cells_next_to_white = 0;
             reset_liberty_scan_count_for_all_cells(board, gs);
         }
 

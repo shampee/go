@@ -39,7 +39,7 @@ void print_display_mode(const SDL_DisplayMode* mode);
 void print_rect(int x, int y, int w, int h);
 void get_window_size(Settings* s);
 
-void mark_territory_of_dead_stones(Board* board, GameState* gs,
+void mark_territory_of_dead_stones(Board* board, GameState* gs, EndScore* es,
                                    int player_color);
 
 void reset_scan_count_for_all_cells(Board* board, GameState* gs);
