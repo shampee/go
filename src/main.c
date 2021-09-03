@@ -180,6 +180,7 @@ int main(int argc, char* argv[])
     SDL_bool quit         = SDL_FALSE;
     SDL_bool mouse_active = SDL_FALSE;
     SDL_bool mouse_hover  = SDL_FALSE;
+    SDL_bool score_phase  = SDL_FALSE;
 
     while (!quit)
     {
@@ -197,18 +198,31 @@ int main(int argc, char* argv[])
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (is_cursor_within_board(&s, event.motion))
-                    process_click_on_board(&s, &board, &gs, event.motion);
+                {
+                    if (score_phase == SDL_FALSE)
+                        process_click_on_board(&s, &board, &gs, event.motion);
+                    else if (score_phase == SDL_TRUE)
+                    {
+                        toggle_dead_stones(&s, &board, &gs, event.motion);
+                    }
+                }
+
                 else if (is_cursor_within_button(event.motion, blackb))
                     (&gs)->turn = BLACK;
                 else if (is_cursor_within_button(event.motion, whiteb))
                     (&gs)->turn = WHITE;
                 else if (is_cursor_within_button(event.motion, reset_board_b))
+                {
                     reset_board(&board, &gs);
+                    score_phase = SDL_FALSE;
+                }
+
                 else if (is_cursor_within_button(event.motion,
                                                  calc_territory_b))
                 {
                     mark_dead_stones(&board, &gs, &es);
                     determine_territory(&board, &gs, &es);
+                    score_phase = SDL_TRUE;
                 }
                 break;
             case SDL_MOUSEMOTION:
@@ -1360,6 +1374,11 @@ void determine_territory(Board* board, GameState* gs, EndScore* es)
                 while (gs->count > 0)
                     gs->cells_scanned[gs->count--]->territory_value = WHITE_T;
             }
+            else
+            {
+                while (gs->count > 0)
+                    gs->cells_scanned[gs->count--]->territory_value = NO_T;
+            }
             gs->count                     = 0;
             es->empty_cells_next_to_black = 0;
             es->empty_cells_next_to_white = 0;
@@ -1377,6 +1396,70 @@ void determine_territory(Board* board, GameState* gs, EndScore* es)
     reset_scan_count_for_all_cells(board, gs);
 }
 
+void toggle_dead_stones(Settings* s, Board* board, GameState* gs,
+                        SDL_MouseMotionEvent m)
+{
+    int row            = 0;
+    int col            = 0;
+    int grid_size      = board->play_size + 1;
+    int grid_cell_size = s->window_size.h / (grid_size + 1);
+
+    while (row <= grid_size)
+    {
+        if (m.x > board->cell_array[row][col]->dims.x &&
+            m.y > board->cell_array[row][col]->dims.y &&
+            m.x < (board->cell_array[row][col]->dims.x) + grid_cell_size &&
+            m.y < (board->cell_array[row][col]->dims.y) + grid_cell_size)
+        {
+            if (board->cell_array[row][col]->cell_value == BLACK)
+            {
+                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+                scan_group_for_liberties(board, gs, BLACK, row, col);
+
+                if (board->cell_array[row][col]->territory_value == NO_T)
+                {
+                    while (gs->count > 0)
+                        gs->cells_scanned[gs->count--]->territory_value =
+                            WHITE_T;
+                }
+                else if (board->cell_array[row][col]->territory_value ==
+                         WHITE_T)
+                {
+                    while (gs->count > 0)
+                        gs->cells_scanned[gs->count--]->territory_value = NO_T;
+                }
+            }
+
+            else if (board->cell_array[row][col]->cell_value == WHITE)
+            {
+                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+                scan_group_for_liberties(board, gs, WHITE, row, col);
+
+                if (board->cell_array[row][col]->territory_value == NO_T)
+                {
+                    while (gs->count > 0)
+                        gs->cells_scanned[gs->count--]->territory_value =
+                            BLACK_T;
+                }
+                else if (board->cell_array[row][col]->territory_value ==
+                         BLACK_T)
+                {
+                    while (gs->count > 0)
+                        gs->cells_scanned[gs->count--]->territory_value = NO_T;
+                }
+            }
+            reset_scan_count_for_all_cells(board, gs);
+            break;
+        }
+
+        col++;
+        if (col > grid_size)
+        {
+            col = 0;
+            row++;
+        }
+    }
+}
 void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
                                     int row, int col)
 {

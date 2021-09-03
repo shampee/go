@@ -47,6 +47,9 @@ void reset_border_scan_count_for_all_cells(Board* board, GameState* gs);
 
 void determine_territory(Board* board, GameState* gs, EndScore* es);
 
+void toggle_dead_stones(Settings* s, Board* board, GameState* gs,
+                        SDL_MouseMotionEvent m);
+
 void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
                                     int row, int col);
 
