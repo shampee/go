@@ -35,6 +35,12 @@ typedef struct
     SDL_Color    white;
 } Score;
 
+typedef struct
+{
+    int empty_cells_next_to_black;
+    int empty_cells_next_to_white;
+} EndScore;
+
 typedef enum { DEBUG, REGULAR } GameMode;
 typedef enum { MENU, HOST, JOIN, PLAY } State;
 typedef struct
@@ -50,6 +56,7 @@ typedef struct
     int             turn;
     Board           board;
     Score           score;
+    EndScore        end_score;
     GameMode        game_mode;
     State           state;
     SDL_bool        hosting;
@@ -65,12 +72,6 @@ typedef struct
 
     } net;
 } GameState;
-
-typedef struct
-{
-    int empty_cells_next_to_black;
-    int empty_cells_next_to_white;
-} EndScore;
 
 typedef struct
 {

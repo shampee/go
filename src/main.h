@@ -12,21 +12,17 @@ SDL_Texture* get_text(const char* text, const char* font_path, int size,
                       SDL_Color color, SDL_Renderer* renderer);
 
 void init_board(Settings* s, Board* board, int play_size);
-void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
-                     int col);
+void init_scan_enemy(GameState* gs, int enemy_color, int row, int col);
 void update_board(Settings* s, Board* board);
 void capture_stones(GameState* gs);
-int  check_for_suicide(Board* board, GameState* gs, int own_color, int row,
-                       int col);
-void scan_group_for_liberties(Board* board, GameState* gs, int enemy_color,
-                              int row, int col);
-void reset_liberty_scan_count_for_all_cells(Board* board, GameState* gs);
+int  check_for_suicide(GameState* gs, int own_color, int row, int col);
+void scan_group_for_liberties(GameState* gs, int enemy_color, int row, int col);
+void reset_liberty_scan_count_for_all_cells(GameState* gs);
 
-void process_click_on_board(Settings* s, Board* board, GameState* gs,
-                            SDL_MouseMotionEvent m);
+void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m);
 void get_score_text_black(GameState* gs);
 void get_score_text_white(GameState* gs);
-void reset_board(Board* board, GameState* gs);
+void reset_board(GameState* gs);
 void process_mouse_over_board(Settings* s, Board* board,
                               SDL_MouseMotionEvent m);
 
@@ -39,20 +35,18 @@ void print_display_mode(const SDL_DisplayMode* mode);
 void print_rect(int x, int y, int w, int h);
 void get_window_size(Settings* s);
 
-void mark_dead_stones(Board* board, GameState* gs, EndScore* es);
+void mark_dead_stones(GameState* gs);
 
-void reset_scan_count_for_all_cells(Board* board, GameState* gs);
+void reset_scan_count_for_all_cells(GameState* gs);
 
-void reset_border_scan_count_for_all_cells(Board* board, GameState* gs);
+void reset_border_scan_count_for_all_cells(GameState* gs);
 
-void determine_territory(Board* board, GameState* gs, EndScore* es);
+void determine_territory(GameState* gs);
 
-void toggle_dead_stones(Settings* s, Board* board, GameState* gs,
-                        SDL_MouseMotionEvent m);
+void toggle_dead_stones(Settings* s, GameState* gs, SDL_MouseMotionEvent m);
 
-void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
-                                    int row, int col);
+void scan_empty_cells_for_ownership(GameState* gs, int row, int col);
 
-void  place_on_pos(GameState* s, Board* board, const char* pos);
+void  place_on_pos(GameState* s, const char* pos);
 void* host(void* vargp);
 void* join(void* vargp);

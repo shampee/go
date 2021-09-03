@@ -8,12 +8,6 @@ int main(int argc, char* argv[])
     };
 
     // Should we move these initialisations into some function?
-    Board board = {
-        .cell_array        = { { NULL } },
-        .grid_cursor_ghost = NULL,
-        .play_size         = 9,
-    };
-
     GameState gs = { .liberties         = 0,
                      .cells_scanned     = { NULL },
                      .stones_captured   = { NULL },
@@ -31,26 +25,26 @@ int main(int argc, char* argv[])
                          .black_score      = 0,
                          .white_score      = 0,
                      },
+                     .board = {
+                         .cell_array = { { NULL } },
+                         .grid_cursor_ghost = NULL,
+                         .play_size         = 9,
+                    },
                      .hosting = SDL_FALSE,
     };
-
-    EndScore es = { .empty_cells_next_to_black = 0,
-                    .empty_cells_next_to_white = 0 };
 
     init_sdl(&s, &gs, argc, argv);
     SDL_SetWindowTitle(app.window, "Go");
     print_display_mode(&s.display_mode);
     atexit(cleanup);
 
-    int grid_size      = board.play_size + 1;
+    int grid_size      = gs.board.play_size + 1;
     int grid_cell_size = s.window_size.h / (grid_size + 1);
 
     int row = 0;
     int col = 0;
 
-    init_board(&s, &board, board.play_size);
-    // Dirty
-    gs.board = board;
+    init_board(&s, &gs.board, gs.board.play_size);
 
     // Colors
     SDL_Color grid_background         = { 222, 184, 135, 255 };
@@ -132,7 +126,7 @@ int main(int argc, char* argv[])
     char         alphabet_char = 'A';
     char         alphabet_char_string[5];
     int          i;
-    for (i = 0; i < board.play_size; alphabet_char++, i++)
+    for (i = 0; i < gs.board.play_size; alphabet_char++, i++)
     {
         sprintf(alphabet_char_string, " %c ", alphabet_char);
         texture_array_alpha[i] = get_text(alphabet_char_string,
@@ -144,9 +138,9 @@ int main(int argc, char* argv[])
 
     // create textures for co ordinates on edges of board - numerical
     SDL_Texture* texture_array_num[grid_size];
-    int          num_char = board.play_size;
+    int          num_char = gs.board.play_size;
     char         num_char_str[5];
-    for (i = 0; i < board.play_size; num_char--, i++)
+    for (i = 0; i < gs.board.play_size; num_char--, i++)
     {
         sprintf(num_char_str, " %d ", num_char);
         texture_array_num[i] = get_text(num_char_str,
@@ -158,17 +152,17 @@ int main(int argc, char* argv[])
 
     alphabet_char = 'A';
     alphabet_char--;
-    for (int i = 0; i < board.play_size + 1; alphabet_char++, i++)
+    for (int i = 0; i < gs.board.play_size + 1; alphabet_char++, i++)
     {
-        for (int j = 0; j < board.play_size + 1; num_char--, j++)
+        for (int j = 0; j < gs.board.play_size + 1; num_char--, j++)
         {
-            sprintf(board.cell_array[j][i]->position_str,
+            sprintf(gs.board.cell_array[j][i]->position_str,
                     "%c%d",
                     alphabet_char,
                     num_char);
             if (j == 9)
             {
-                num_char = board.play_size + 2;
+                num_char = gs.board.play_size + 2;
             }
         }
     }
@@ -200,10 +194,10 @@ int main(int argc, char* argv[])
                 if (is_cursor_within_board(&s, event.motion))
                 {
                     if (score_phase == SDL_FALSE)
-                        process_click_on_board(&s, &board, &gs, event.motion);
+                        process_click_on_board(&s, &gs, event.motion);
                     else if (score_phase == SDL_TRUE)
                     {
-                        toggle_dead_stones(&s, &board, &gs, event.motion);
+                        toggle_dead_stones(&s, &gs, event.motion);
                     }
                 }
 
@@ -213,21 +207,21 @@ int main(int argc, char* argv[])
                     (&gs)->turn = WHITE;
                 else if (is_cursor_within_button(event.motion, reset_board_b))
                 {
-                    reset_board(&board, &gs);
+                    reset_board(&gs);
                     score_phase = SDL_FALSE;
                 }
 
                 else if (is_cursor_within_button(event.motion,
                                                  calc_territory_b))
                 {
-                    mark_dead_stones(&board, &gs, &es);
-                    determine_territory(&board, &gs, &es);
+                    mark_dead_stones(&gs);
+                    determine_territory(&gs);
                     score_phase = SDL_TRUE;
                 }
                 break;
             case SDL_MOUSEMOTION:
                 if (is_cursor_within_board(&s, event.motion))
-                    process_mouse_over_board(&s, &board, event.motion);
+                    process_mouse_over_board(&s, &gs.board, event.motion);
                 if (!mouse_active)
                     mouse_active = SDL_TRUE;
                 break;
@@ -245,9 +239,8 @@ int main(int argc, char* argv[])
         }
 
         get_window_size(&s);
-        update_board(&s, &board);
+        update_board(&s, &gs.board);
         // Dirty
-        gs.board = board;
         switch (gs.state)
         {
         case MENU:
@@ -344,82 +337,122 @@ int main(int argc, char* argv[])
         }
 
         // Draw dots on board
-        if (board.play_size == 9)
+        if (gs.board.play_size == 9)
         {
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[3][3]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[3][7]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[5][5]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[7][3]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[7][7]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[3][3]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[3][7]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[5][5]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[7][3]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[7][7]->dims);
         }
 
-        else if (board.play_size == 13)
+        else if (gs.board.play_size == 13)
         {
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[4][4]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[4][10]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[7][7]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[10][4]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[10][10]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[4][4]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[4][10]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[7][7]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[10][4]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[10][10]->dims);
         }
 
-        else if (board.play_size == 19)
+        else if (gs.board.play_size == 19)
         {
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[4][4]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[4][10]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[4][16]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[4][4]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[4][10]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[4][16]->dims);
 
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[10][4]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[10][10]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[10][16]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[10][4]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[10][10]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[10][16]->dims);
 
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[16][4]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[16][10]->dims);
-            SDL_RenderCopy(
-                app.renderer, dot_image, NULL, &board.cell_array[16][16]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[16][4]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[16][10]->dims);
+            SDL_RenderCopy(app.renderer,
+                           dot_image,
+                           NULL,
+                           &gs.board.cell_array[16][16]->dims);
         }
 
         // Draw co ordinates
-        for (row = 0, col = 1, i = 0; i < board.play_size; col++, i++)
+        for (row = 0, col = 1, i = 0; i < gs.board.play_size; col++, i++)
             SDL_RenderCopy(app.renderer,
                            texture_array_alpha[i],
                            NULL,
-                           &board.cell_array[row][col]->dims);
+                           &gs.board.cell_array[row][col]->dims);
 
-        for (row = grid_size, col = 1, i = 0; i < board.play_size; col++, i++)
+        for (row = grid_size, col = 1, i = 0; i < gs.board.play_size;
+             col++, i++)
             SDL_RenderCopy(app.renderer,
                            texture_array_alpha[i],
                            NULL,
-                           &board.cell_array[row][col]->dims);
+                           &gs.board.cell_array[row][col]->dims);
 
-        for (row = 1, col = 0, i = 0; i < board.play_size; row++, i++)
+        for (row = 1, col = 0, i = 0; i < gs.board.play_size; row++, i++)
             SDL_RenderCopy(app.renderer,
                            texture_array_num[i],
                            NULL,
-                           &board.cell_array[row][col]->dims);
+                           &gs.board.cell_array[row][col]->dims);
 
-        for (row = 1, col = grid_size, i = 0; i < board.play_size; row++, i++)
+        for (row = 1, col = grid_size, i = 0; i < gs.board.play_size;
+             row++, i++)
             SDL_RenderCopy(app.renderer,
                            texture_array_num[i],
                            NULL,
-                           &board.cell_array[row][col]->dims);
+                           &gs.board.cell_array[row][col]->dims);
 
         // Draw white and black buttons
         SDL_RenderCopy(app.renderer, black_stone, NULL, &blackb);
@@ -446,15 +479,15 @@ int main(int argc, char* argv[])
                                    grid_cursor_ghost_color.g,
                                    grid_cursor_ghost_color.b,
                                    grid_cursor_ghost_color.a);
-            if (board.grid_cursor_ghost->cell_value == EMPTY)
+            if (gs.board.grid_cursor_ghost->cell_value == EMPTY)
                 SDL_RenderFillRect(app.renderer,
-                                   &board.grid_cursor_ghost->dims);
+                                   &gs.board.grid_cursor_ghost->dims);
         }
 
         // Draw stones.
         for (row = 0, col = 0; row <= grid_size;)
         {
-            if (board.cell_array[row][col]->territory_value == BLACK_T)
+            if (gs.board.cell_array[row][col]->territory_value == BLACK_T)
             {
                 SDL_SetRenderDrawColor(app.renderer,
                                        black_ter.r,
@@ -462,9 +495,9 @@ int main(int argc, char* argv[])
                                        black_ter.b,
                                        black_ter.a);
                 SDL_RenderFillRect(app.renderer,
-                                   &board.cell_array[row][col]->dims);
+                                   &gs.board.cell_array[row][col]->dims);
             }
-            else if (board.cell_array[row][col]->territory_value == WHITE_T)
+            else if (gs.board.cell_array[row][col]->territory_value == WHITE_T)
             {
                 SDL_SetRenderDrawColor(app.renderer,
                                        white_ter.r,
@@ -472,18 +505,18 @@ int main(int argc, char* argv[])
                                        white_ter.b,
                                        white_ter.a);
                 SDL_RenderFillRect(app.renderer,
-                                   &board.cell_array[row][col]->dims);
+                                   &gs.board.cell_array[row][col]->dims);
             }
-            if (board.cell_array[row][col]->cell_value == BLACK)
+            if (gs.board.cell_array[row][col]->cell_value == BLACK)
                 SDL_RenderCopy(app.renderer,
                                black_stone,
                                NULL,
-                               &board.cell_array[row][col]->dims);
-            else if (board.cell_array[row][col]->cell_value == WHITE)
+                               &gs.board.cell_array[row][col]->dims);
+            else if (gs.board.cell_array[row][col]->cell_value == WHITE)
                 SDL_RenderCopy(app.renderer,
                                white_stone,
                                NULL,
-                               &board.cell_array[row][col]->dims);
+                               &gs.board.cell_array[row][col]->dims);
 
             col++;
             if (col > grid_size)
@@ -727,45 +760,44 @@ void update_board(Settings* s, Board* board)
     }
 }
 
-void process_click_on_board(Settings* s, Board* board, GameState* gs,
-                            SDL_MouseMotionEvent m)
+void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
 {
     int row            = 0;
     int col            = 0;
-    int grid_size      = board->play_size + 1;
+    int grid_size      = gs->board.play_size + 1;
     int grid_cell_size = s->window_size.h / (grid_size + 1);
 
     while (row <= grid_size)
     {
-        if (m.x > board->cell_array[row][col]->dims.x &&
-            m.y > board->cell_array[row][col]->dims.y &&
-            m.x < (board->cell_array[row][col]->dims.x) + grid_cell_size &&
-            m.y < (board->cell_array[row][col]->dims.y) + grid_cell_size)
+        if (m.x > gs->board.cell_array[row][col]->dims.x &&
+            m.y > gs->board.cell_array[row][col]->dims.y &&
+            m.x < (gs->board.cell_array[row][col]->dims.x) + grid_cell_size &&
+            m.y < (gs->board.cell_array[row][col]->dims.y) + grid_cell_size)
         {
-            if (board->cell_array[row][col]->cell_value == EMPTY)
+            if (gs->board.cell_array[row][col]->cell_value == EMPTY)
             {
                 if (gs->turn == BLACK)
                 {
-                    board->cell_array[row][col]->cell_value = BLACK;
-                    gs->stones_to_capture                   = NO;
+                    gs->board.cell_array[row][col]->cell_value = BLACK;
+                    gs->stones_to_capture                      = NO;
                     // scans the enemy group (if there is one)
                     // for liberties directly above the placed black stone
-                    init_scan_enemy(board, gs, WHITE, row - 1, col);
+                    init_scan_enemy(gs, WHITE, row - 1, col);
                     // scans the enemy group directly to the right of the placed black stone
-                    init_scan_enemy(board, gs, WHITE, row, col + 1);
+                    init_scan_enemy(gs, WHITE, row, col + 1);
                     // scans the enemy group directly below the placed black stone
-                    init_scan_enemy(board, gs, WHITE, row + 1, col);
+                    init_scan_enemy(gs, WHITE, row + 1, col);
                     // scans the enemy group directly to the left of the placed black stone
-                    init_scan_enemy(board, gs, WHITE, row, col - 1);
+                    init_scan_enemy(gs, WHITE, row, col - 1);
 
                     // Check for Ko
                     if (gs->stones_to_capture == YES &&
-                        gs->ko_rule_black == board->cell_array[row][col])
+                        gs->ko_rule_black == gs->board.cell_array[row][col])
                     {
                         printf("Rule: ko, also known as infinity - you cannot "
                                "place the stone in the same cell as your "
                                "previous move\n\n");
-                        board->cell_array[row][col]->cell_value = EMPTY;
+                        gs->board.cell_array[row][col]->cell_value = EMPTY;
                         while (gs->capcount > 0)
                             gs->stones_captured[gs->capcount--]
                                 ->has_cell_been_scanned = NO;
@@ -775,28 +807,28 @@ void process_click_on_board(Settings* s, Board* board, GameState* gs,
                     capture_stones(gs);
                     get_score_text_black(gs);
 
-                    if (check_for_suicide(board, gs, BLACK, row, col) == OK)
-                        gs->ko_rule_black = board->cell_array[row][col];
+                    if (check_for_suicide(gs, BLACK, row, col) == OK)
+                        gs->ko_rule_black = gs->board.cell_array[row][col];
                 }
 
                 else if (gs->turn == WHITE)
                 {
-                    board->cell_array[row][col]->cell_value = WHITE;
-                    gs->stones_to_capture                   = NO;
+                    gs->board.cell_array[row][col]->cell_value = WHITE;
+                    gs->stones_to_capture                      = NO;
 
-                    init_scan_enemy(board, gs, BLACK, row - 1, col);
-                    init_scan_enemy(board, gs, BLACK, row, col + 1);
-                    init_scan_enemy(board, gs, BLACK, row + 1, col);
-                    init_scan_enemy(board, gs, BLACK, row, col - 1);
+                    init_scan_enemy(gs, BLACK, row - 1, col);
+                    init_scan_enemy(gs, BLACK, row, col + 1);
+                    init_scan_enemy(gs, BLACK, row + 1, col);
+                    init_scan_enemy(gs, BLACK, row, col - 1);
 
                     // Check for Ko
                     if (gs->stones_to_capture == YES &&
-                        gs->ko_rule_white == board->cell_array[row][col])
+                        gs->ko_rule_white == gs->board.cell_array[row][col])
                     {
                         printf("Rule: ko, also known as infinity - you cannot "
                                "place the stone in the same cell as your "
                                "previous move\n\n");
-                        board->cell_array[row][col]->cell_value = EMPTY;
+                        gs->board.cell_array[row][col]->cell_value = EMPTY;
                         while (gs->capcount > 0)
                             gs->stones_captured[gs->capcount--]
                                 ->has_cell_been_scanned = NO;
@@ -806,8 +838,8 @@ void process_click_on_board(Settings* s, Board* board, GameState* gs,
                     capture_stones(gs);
                     get_score_text_white(gs);
 
-                    if (check_for_suicide(board, gs, WHITE, row, col) == OK)
-                        gs->ko_rule_white = board->cell_array[row][col];
+                    if (check_for_suicide(gs, WHITE, row, col) == OK)
+                        gs->ko_rule_white = gs->board.cell_array[row][col];
                 }
             }
             break;
@@ -828,16 +860,15 @@ void process_click_on_board(Settings* s, Board* board, GameState* gs,
 // the cells_scanned array, which will later be used to remove the
 // stones off of the board (if no liberties are found),
 // by changing the cell value of each cell to EMPTY
-void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
-                     int col)
+void init_scan_enemy(GameState* gs, int enemy_color, int row, int col)
 {
-    if (board->cell_array[row][col]->cell_value == enemy_color &&
-        board->cell_array[row][col]->has_cell_been_scanned == NO)
+    if (gs->board.cell_array[row][col]->cell_value == enemy_color &&
+        gs->board.cell_array[row][col]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row][col]->has_cell_been_scanned = YES;
-        gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+        gs->board.cell_array[row][col]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col];
 
-        scan_group_for_liberties(board, gs, enemy_color, row, col);
+        scan_group_for_liberties(gs, enemy_color, row, col);
 
         if (gs->liberties == 0)
         {
@@ -852,66 +883,65 @@ void init_scan_enemy(Board* board, GameState* gs, int enemy_color, int row,
                 gs->cells_scanned[gs->count--]->has_cell_been_scanned = NO;
             gs->liberties = 0;
         }
-        reset_liberty_scan_count_for_all_cells(board, gs);
+        reset_liberty_scan_count_for_all_cells(gs);
     }
 }
 
-void scan_group_for_liberties(Board* board, GameState* gs, int target_color,
-                              int row, int col)
+void scan_group_for_liberties(GameState* gs, int target_color, int row, int col)
 {
-    if (board->cell_array[row - 1][col]->cell_value == target_color &&
-        board->cell_array[row - 1][col]->has_cell_been_scanned == NO)
+    if (gs->board.cell_array[row - 1][col]->cell_value == target_color &&
+        gs->board.cell_array[row - 1][col]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row - 1][col]->has_cell_been_scanned = YES;
-        gs->cells_scanned[++gs->count] = board->cell_array[row - 1][col];
-        scan_group_for_liberties(board, gs, target_color, row - 1, col);
+        gs->board.cell_array[row - 1][col]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = gs->board.cell_array[row - 1][col];
+        scan_group_for_liberties(gs, target_color, row - 1, col);
     }
-    else if (board->cell_array[row - 1][col]->cell_value == EMPTY &&
-             board->cell_array[row - 1][col]->has_liberty_been_scanned == NO)
+    else if (gs->board.cell_array[row - 1][col]->cell_value == EMPTY &&
+             gs->board.cell_array[row - 1][col]->has_liberty_been_scanned == NO)
     {
-        board->cell_array[row - 1][col]->has_liberty_been_scanned = YES;
+        gs->board.cell_array[row - 1][col]->has_liberty_been_scanned = YES;
         ++gs->liberties;
     }
 
-    if (board->cell_array[row][col + 1]->cell_value == target_color &&
-        board->cell_array[row][col + 1]->has_cell_been_scanned == NO)
+    if (gs->board.cell_array[row][col + 1]->cell_value == target_color &&
+        gs->board.cell_array[row][col + 1]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row][col + 1]->has_cell_been_scanned = YES;
-        gs->cells_scanned[++gs->count] = board->cell_array[row][col + 1];
-        scan_group_for_liberties(board, gs, target_color, row, col + 1);
+        gs->board.cell_array[row][col + 1]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col + 1];
+        scan_group_for_liberties(gs, target_color, row, col + 1);
     }
-    else if (board->cell_array[row][col + 1]->cell_value == EMPTY &&
-             board->cell_array[row][col + 1]->has_liberty_been_scanned == NO)
+    else if (gs->board.cell_array[row][col + 1]->cell_value == EMPTY &&
+             gs->board.cell_array[row][col + 1]->has_liberty_been_scanned == NO)
     {
-        board->cell_array[row][col + 1]->has_liberty_been_scanned = YES;
+        gs->board.cell_array[row][col + 1]->has_liberty_been_scanned = YES;
         ++gs->liberties;
     }
 
-    if (board->cell_array[row + 1][col]->cell_value == target_color &&
-        board->cell_array[row + 1][col]->has_cell_been_scanned == NO)
+    if (gs->board.cell_array[row + 1][col]->cell_value == target_color &&
+        gs->board.cell_array[row + 1][col]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row + 1][col]->has_cell_been_scanned = YES;
-        gs->cells_scanned[++gs->count] = board->cell_array[row + 1][col];
-        scan_group_for_liberties(board, gs, target_color, row + 1, col);
+        gs->board.cell_array[row + 1][col]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = gs->board.cell_array[row + 1][col];
+        scan_group_for_liberties(gs, target_color, row + 1, col);
     }
-    else if (board->cell_array[row + 1][col]->cell_value == EMPTY &&
-             board->cell_array[row + 1][col]->has_liberty_been_scanned == NO)
+    else if (gs->board.cell_array[row + 1][col]->cell_value == EMPTY &&
+             gs->board.cell_array[row + 1][col]->has_liberty_been_scanned == NO)
     {
-        board->cell_array[row + 1][col]->has_liberty_been_scanned = YES;
+        gs->board.cell_array[row + 1][col]->has_liberty_been_scanned = YES;
         ++gs->liberties;
     }
 
-    if (board->cell_array[row][col - 1]->cell_value == target_color &&
-        board->cell_array[row][col - 1]->has_cell_been_scanned == NO)
+    if (gs->board.cell_array[row][col - 1]->cell_value == target_color &&
+        gs->board.cell_array[row][col - 1]->has_cell_been_scanned == NO)
     {
-        board->cell_array[row][col - 1]->has_cell_been_scanned = YES;
-        gs->cells_scanned[++gs->count] = board->cell_array[row][col - 1];
-        scan_group_for_liberties(board, gs, target_color, row, col - 1);
+        gs->board.cell_array[row][col - 1]->has_cell_been_scanned = YES;
+        gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col - 1];
+        scan_group_for_liberties(gs, target_color, row, col - 1);
     }
-    else if (board->cell_array[row][col - 1]->cell_value == EMPTY &&
-             board->cell_array[row][col - 1]->has_liberty_been_scanned == NO)
+    else if (gs->board.cell_array[row][col - 1]->cell_value == EMPTY &&
+             gs->board.cell_array[row][col - 1]->has_liberty_been_scanned == NO)
     {
-        board->cell_array[row][col - 1]->has_liberty_been_scanned = YES;
+        gs->board.cell_array[row][col - 1]->has_liberty_been_scanned = YES;
         ++gs->liberties;
     }
 }
@@ -950,14 +980,13 @@ void get_score_text_white(GameState* gs)
                                           app.renderer);
 }
 
-int check_for_suicide(Board* board, GameState* gs, int own_color, int row,
-                      int col)
+int check_for_suicide(GameState* gs, int own_color, int row, int col)
 {
-    scan_group_for_liberties(board, gs, own_color, row, col);
+    scan_group_for_liberties(gs, own_color, row, col);
 
     if (gs->liberties == 0)
     {
-        board->cell_array[row][col]->cell_value = EMPTY;
+        gs->board.cell_array[row][col]->cell_value = EMPTY;
         printf("Rule: You can not reduce your own group of stones liberties to "
                "0, or otherwise place a stone where there are no liberties for "
                "it\n\n");
@@ -970,26 +999,26 @@ int check_for_suicide(Board* board, GameState* gs, int own_color, int row,
         while (gs->count > 0)
             gs->cells_scanned[gs->count--]->has_cell_been_scanned = NO;
         gs->liberties = 0;
-        reset_liberty_scan_count_for_all_cells(board, gs);
+        reset_liberty_scan_count_for_all_cells(gs);
         return OK;
     }
 }
 
-void reset_board(Board* board, GameState* gs)
+void reset_board(GameState* gs)
 {
     int row       = 0;
     int col       = 0;
-    int grid_size = board->play_size + 1;
+    int grid_size = gs->board.play_size + 1;
 
     while (row <= grid_size)
     {
-        if (board->cell_array[row][col]->cell_value == BLACK ||
-            board->cell_array[row][col]->cell_value == WHITE)
-            board->cell_array[row][col]->cell_value = EMPTY;
-        board->cell_array[row][col]->territory_value          = NO_T;
-        board->cell_array[row][col]->has_cell_been_scanned    = NO;
-        board->cell_array[row][col]->has_liberty_been_scanned = NO;
-        board->cell_array[row][col]->has_border_been_scanned  = NO;
+        if (gs->board.cell_array[row][col]->cell_value == BLACK ||
+            gs->board.cell_array[row][col]->cell_value == WHITE)
+            gs->board.cell_array[row][col]->cell_value = EMPTY;
+        gs->board.cell_array[row][col]->territory_value          = NO_T;
+        gs->board.cell_array[row][col]->has_cell_been_scanned    = NO;
+        gs->board.cell_array[row][col]->has_liberty_been_scanned = NO;
+        gs->board.cell_array[row][col]->has_border_been_scanned  = NO;
         col++;
         if (col > grid_size)
         {
@@ -1082,11 +1111,11 @@ void get_window_size(Settings* s)
     SDL_GetWindowSize(app.window, &s->window_size.w, &s->window_size.h);
 }
 
-void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
+void mark_dead_stones(GameState* gs)
 {
     int row       = 0;
     int col       = 0;
-    int grid_size = board->play_size + 1;
+    int grid_size = gs->board.play_size + 1;
     int mark_color;
     int territory_color;
 
@@ -1104,13 +1133,13 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
 
         while (row <= grid_size)
         {
-            if (board->cell_array[row][col]->cell_value == stone_color &&
-                board->cell_array[row][col]->has_cell_been_scanned == NO)
+            if (gs->board.cell_array[row][col]->cell_value == stone_color &&
+                gs->board.cell_array[row][col]->has_cell_been_scanned == NO)
             {
-                board->cell_array[row][col]->has_cell_been_scanned = YES;
-                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+                gs->board.cell_array[row][col]->has_cell_been_scanned = YES;
+                gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col];
 
-                scan_group_for_liberties(board, gs, stone_color, row, col);
+                scan_group_for_liberties(gs, stone_color, row, col);
 
                 if (gs->liberties == 1)
                 {
@@ -1118,11 +1147,11 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                         gs->cells_scanned[gs->count--]->territory_value =
                             mark_color;
                 }
-                gs->liberties                 = 0;
-                gs->count                     = 0;
-                es->empty_cells_next_to_black = 0;
-                es->empty_cells_next_to_white = 0;
-                reset_liberty_scan_count_for_all_cells(board, gs);
+                gs->liberties                           = 0;
+                gs->count                               = 0;
+                gs->end_score.empty_cells_next_to_black = 0;
+                gs->end_score.empty_cells_next_to_white = 0;
+                reset_liberty_scan_count_for_all_cells(gs);
             }
 
             col++;
@@ -1133,7 +1162,7 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                 row++;
             }
         }
-        reset_scan_count_for_all_cells(board, gs);
+        reset_scan_count_for_all_cells(gs);
         stone_color = WHITE;
         --loop_counter;
     }
@@ -1157,13 +1186,13 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
 
         while (row <= grid_size)
         {
-            if (board->cell_array[row][col]->cell_value == stone_color &&
-                board->cell_array[row][col]->has_cell_been_scanned == NO)
+            if (gs->board.cell_array[row][col]->cell_value == stone_color &&
+                gs->board.cell_array[row][col]->has_cell_been_scanned == NO)
             {
-                board->cell_array[row][col]->has_cell_been_scanned = YES;
-                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+                gs->board.cell_array[row][col]->has_cell_been_scanned = YES;
+                gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col];
 
-                scan_group_for_liberties(board, gs, stone_color, row, col);
+                scan_group_for_liberties(gs, stone_color, row, col);
 
                 if (gs->count == 2)
                 {
@@ -1175,13 +1204,13 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                         --gs->count;
                     }
 
-                    scan_empty_cells_for_ownership(board, gs, es, row, col);
+                    scan_empty_cells_for_ownership(gs, row, col);
 
-                    if (es->empty_cells_next_to_black >
-                        es->empty_cells_next_to_white)
+                    if (gs->end_score.empty_cells_next_to_black >
+                        gs->end_score.empty_cells_next_to_white)
                         territory_color = BLACK;
-                    else if (es->empty_cells_next_to_black <
-                             es->empty_cells_next_to_white)
+                    else if (gs->end_score.empty_cells_next_to_black <
+                             gs->end_score.empty_cells_next_to_white)
                         territory_color = WHITE;
 
                     if (stone_color != territory_color)
@@ -1195,12 +1224,12 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                         cell_storage[i--]->cell_value = stone_color;
                 }
 
-                gs->liberties                 = 0;
-                gs->count                     = 0;
-                es->empty_cells_next_to_black = 0;
-                es->empty_cells_next_to_white = 0;
-                reset_liberty_scan_count_for_all_cells(board, gs);
-                reset_border_scan_count_for_all_cells(board, gs);
+                gs->liberties                           = 0;
+                gs->count                               = 0;
+                gs->end_score.empty_cells_next_to_black = 0;
+                gs->end_score.empty_cells_next_to_white = 0;
+                reset_liberty_scan_count_for_all_cells(gs);
+                reset_border_scan_count_for_all_cells(gs);
             }
 
             col++;
@@ -1211,7 +1240,7 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                 row++;
             }
         }
-        reset_scan_count_for_all_cells(board, gs);
+        reset_scan_count_for_all_cells(gs);
         stone_color = WHITE;
         --loop_counter;
     }
@@ -1233,13 +1262,13 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
 
         while (row <= grid_size)
         {
-            if (board->cell_array[row][col]->cell_value == stone_color &&
-                board->cell_array[row][col]->has_cell_been_scanned == NO)
+            if (gs->board.cell_array[row][col]->cell_value == stone_color &&
+                gs->board.cell_array[row][col]->has_cell_been_scanned == NO)
             {
-                board->cell_array[row][col]->has_cell_been_scanned = YES;
-                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+                gs->board.cell_array[row][col]->has_cell_been_scanned = YES;
+                gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col];
 
-                scan_group_for_liberties(board, gs, stone_color, row, col);
+                scan_group_for_liberties(gs, stone_color, row, col);
 
                 if (gs->count == 1)
                 {
@@ -1251,13 +1280,13 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                         --gs->count;
                     }
 
-                    scan_empty_cells_for_ownership(board, gs, es, row, col);
+                    scan_empty_cells_for_ownership(gs, row, col);
 
-                    if (es->empty_cells_next_to_black >
-                        es->empty_cells_next_to_white)
+                    if (gs->end_score.empty_cells_next_to_black >
+                        gs->end_score.empty_cells_next_to_white)
                         territory_color = BLACK;
-                    else if (es->empty_cells_next_to_black <
-                             es->empty_cells_next_to_white)
+                    else if (gs->end_score.empty_cells_next_to_black <
+                             gs->end_score.empty_cells_next_to_white)
                         territory_color = WHITE;
 
                     if (stone_color != territory_color)
@@ -1271,12 +1300,12 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                         cell_storage[i--]->cell_value = stone_color;
                 }
 
-                gs->liberties                 = 0;
-                gs->count                     = 0;
-                es->empty_cells_next_to_black = 0;
-                es->empty_cells_next_to_white = 0;
-                reset_liberty_scan_count_for_all_cells(board, gs);
-                reset_border_scan_count_for_all_cells(board, gs);
+                gs->liberties                           = 0;
+                gs->count                               = 0;
+                gs->end_score.empty_cells_next_to_black = 0;
+                gs->end_score.empty_cells_next_to_white = 0;
+                reset_liberty_scan_count_for_all_cells(gs);
+                reset_border_scan_count_for_all_cells(gs);
             }
 
             col++;
@@ -1287,21 +1316,21 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                 row++;
             }
         }
-        reset_scan_count_for_all_cells(board, gs);
+        reset_scan_count_for_all_cells(gs);
         stone_color = WHITE;
         --loop_counter;
     }
 }
 
-void reset_scan_count_for_all_cells(Board* board, GameState* gs)
+void reset_scan_count_for_all_cells(GameState* gs)
 {
     int row       = 0;
     int col       = 0;
-    int grid_size = board->play_size + 1;
+    int grid_size = gs->board.play_size + 1;
 
     while (row <= grid_size)
     {
-        board->cell_array[row][col]->has_cell_been_scanned = NO;
+        gs->board.cell_array[row][col]->has_cell_been_scanned = NO;
         col++;
         if (col > grid_size)
         {
@@ -1311,15 +1340,15 @@ void reset_scan_count_for_all_cells(Board* board, GameState* gs)
     }
 }
 
-void reset_liberty_scan_count_for_all_cells(Board* board, GameState* gs)
+void reset_liberty_scan_count_for_all_cells(GameState* gs)
 {
     int row       = 0;
     int col       = 0;
-    int grid_size = board->play_size + 1;
+    int grid_size = gs->board.play_size + 1;
 
     while (row <= grid_size)
     {
-        board->cell_array[row][col]->has_liberty_been_scanned = NO;
+        gs->board.cell_array[row][col]->has_liberty_been_scanned = NO;
         col++;
         if (col > grid_size)
         {
@@ -1329,15 +1358,15 @@ void reset_liberty_scan_count_for_all_cells(Board* board, GameState* gs)
     }
 }
 
-void reset_border_scan_count_for_all_cells(Board* board, GameState* gs)
+void reset_border_scan_count_for_all_cells(GameState* gs)
 {
     int row       = 0;
     int col       = 0;
-    int grid_size = board->play_size + 1;
+    int grid_size = gs->board.play_size + 1;
 
     while (row <= grid_size)
     {
-        board->cell_array[row][col]->has_border_been_scanned = NO;
+        gs->board.cell_array[row][col]->has_border_been_scanned = NO;
         col++;
         if (col > grid_size)
         {
@@ -1347,29 +1376,30 @@ void reset_border_scan_count_for_all_cells(Board* board, GameState* gs)
     }
 }
 
-void determine_territory(Board* board, GameState* gs, EndScore* es)
+void determine_territory(GameState* gs)
 {
     int row       = 0;
     int col       = 0;
-    int grid_size = board->play_size + 1;
+    int grid_size = gs->board.play_size + 1;
 
     while (row <= grid_size)
     {
-        if (board->cell_array[row][col]->cell_value == EMPTY &&
-            board->cell_array[row][col]->has_cell_been_scanned == NO)
+        if (gs->board.cell_array[row][col]->cell_value == EMPTY &&
+            gs->board.cell_array[row][col]->has_cell_been_scanned == NO)
         {
-            board->cell_array[row][col]->has_cell_been_scanned = YES;
-            gs->cells_scanned[++gs->count] = board->cell_array[row][col];
+            gs->board.cell_array[row][col]->has_cell_been_scanned = YES;
+            gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col];
 
-            scan_empty_cells_for_ownership(board, gs, es, row, col);
+            scan_empty_cells_for_ownership(gs, row, col);
 
-            if (es->empty_cells_next_to_black > es->empty_cells_next_to_white)
+            if (gs->end_score.empty_cells_next_to_black >
+                gs->end_score.empty_cells_next_to_white)
             {
                 while (gs->count > 0)
                     gs->cells_scanned[gs->count--]->territory_value = BLACK_T;
             }
-            else if (es->empty_cells_next_to_black <
-                     es->empty_cells_next_to_white)
+            else if (gs->end_score.empty_cells_next_to_black <
+                     gs->end_score.empty_cells_next_to_white)
             {
                 while (gs->count > 0)
                     gs->cells_scanned[gs->count--]->territory_value = WHITE_T;
@@ -1379,10 +1409,10 @@ void determine_territory(Board* board, GameState* gs, EndScore* es)
                 while (gs->count > 0)
                     gs->cells_scanned[gs->count--]->territory_value = NO_T;
             }
-            gs->count                     = 0;
-            es->empty_cells_next_to_black = 0;
-            es->empty_cells_next_to_white = 0;
-            reset_border_scan_count_for_all_cells(board, gs);
+            gs->count                               = 0;
+            gs->end_score.empty_cells_next_to_black = 0;
+            gs->end_score.empty_cells_next_to_white = 0;
+            reset_border_scan_count_for_all_cells(gs);
         }
 
         col++;
@@ -1393,36 +1423,35 @@ void determine_territory(Board* board, GameState* gs, EndScore* es)
             row++;
         }
     }
-    reset_scan_count_for_all_cells(board, gs);
+    reset_scan_count_for_all_cells(gs);
 }
 
-void toggle_dead_stones(Settings* s, Board* board, GameState* gs,
-                        SDL_MouseMotionEvent m)
+void toggle_dead_stones(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
 {
     int row            = 0;
     int col            = 0;
-    int grid_size      = board->play_size + 1;
+    int grid_size      = gs->board.play_size + 1;
     int grid_cell_size = s->window_size.h / (grid_size + 1);
 
     while (row <= grid_size)
     {
-        if (m.x > board->cell_array[row][col]->dims.x &&
-            m.y > board->cell_array[row][col]->dims.y &&
-            m.x < (board->cell_array[row][col]->dims.x) + grid_cell_size &&
-            m.y < (board->cell_array[row][col]->dims.y) + grid_cell_size)
+        if (m.x > gs->board.cell_array[row][col]->dims.x &&
+            m.y > gs->board.cell_array[row][col]->dims.y &&
+            m.x < (gs->board.cell_array[row][col]->dims.x) + grid_cell_size &&
+            m.y < (gs->board.cell_array[row][col]->dims.y) + grid_cell_size)
         {
-            if (board->cell_array[row][col]->cell_value == BLACK)
+            if (gs->board.cell_array[row][col]->cell_value == BLACK)
             {
-                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
-                scan_group_for_liberties(board, gs, BLACK, row, col);
+                gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col];
+                scan_group_for_liberties(gs, BLACK, row, col);
 
-                if (board->cell_array[row][col]->territory_value == NO_T)
+                if (gs->board.cell_array[row][col]->territory_value == NO_T)
                 {
                     while (gs->count > 0)
                         gs->cells_scanned[gs->count--]->territory_value =
                             WHITE_T;
                 }
-                else if (board->cell_array[row][col]->territory_value ==
+                else if (gs->board.cell_array[row][col]->territory_value ==
                          WHITE_T)
                 {
                     while (gs->count > 0)
@@ -1430,25 +1459,25 @@ void toggle_dead_stones(Settings* s, Board* board, GameState* gs,
                 }
             }
 
-            else if (board->cell_array[row][col]->cell_value == WHITE)
+            else if (gs->board.cell_array[row][col]->cell_value == WHITE)
             {
-                gs->cells_scanned[++gs->count] = board->cell_array[row][col];
-                scan_group_for_liberties(board, gs, WHITE, row, col);
+                gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col];
+                scan_group_for_liberties(gs, WHITE, row, col);
 
-                if (board->cell_array[row][col]->territory_value == NO_T)
+                if (gs->board.cell_array[row][col]->territory_value == NO_T)
                 {
                     while (gs->count > 0)
                         gs->cells_scanned[gs->count--]->territory_value =
                             BLACK_T;
                 }
-                else if (board->cell_array[row][col]->territory_value ==
+                else if (gs->board.cell_array[row][col]->territory_value ==
                          BLACK_T)
                 {
                     while (gs->count > 0)
                         gs->cells_scanned[gs->count--]->territory_value = NO_T;
                 }
             }
-            reset_scan_count_for_all_cells(board, gs);
+            reset_scan_count_for_all_cells(gs);
             break;
         }
 
@@ -1460,128 +1489,128 @@ void toggle_dead_stones(Settings* s, Board* board, GameState* gs,
         }
     }
 }
-void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
-                                    int row, int col)
+void scan_empty_cells_for_ownership(GameState* gs, int row, int col)
 {
-    if (board->cell_array[row - 1][col]->cell_value == EMPTY ||
-        board->cell_array[row - 1][col]->territory_value == BLACK_T ||
-        board->cell_array[row - 1][col]->territory_value == WHITE_T)
+    if (gs->board.cell_array[row - 1][col]->cell_value == EMPTY ||
+        gs->board.cell_array[row - 1][col]->territory_value == BLACK_T ||
+        gs->board.cell_array[row - 1][col]->territory_value == WHITE_T)
     {
-        if (board->cell_array[row - 1][col]->has_cell_been_scanned == NO)
+        if (gs->board.cell_array[row - 1][col]->has_cell_been_scanned == NO)
         {
-            board->cell_array[row - 1][col]->has_cell_been_scanned = YES;
-            gs->cells_scanned[++gs->count] = board->cell_array[row - 1][col];
-            scan_empty_cells_for_ownership(board, gs, es, row - 1, col);
+            gs->board.cell_array[row - 1][col]->has_cell_been_scanned = YES;
+            gs->cells_scanned[++gs->count] = gs->board.cell_array[row - 1][col];
+            scan_empty_cells_for_ownership(gs, row - 1, col);
         }
     }
-    else if (board->cell_array[row - 1][col]->cell_value == BLACK &&
-             board->cell_array[row - 1][col]->has_border_been_scanned == NO)
+    else if (gs->board.cell_array[row - 1][col]->cell_value == BLACK &&
+             gs->board.cell_array[row - 1][col]->has_border_been_scanned == NO)
     {
-        board->cell_array[row - 1][col]->has_border_been_scanned = YES;
-        ++es->empty_cells_next_to_black;
+        gs->board.cell_array[row - 1][col]->has_border_been_scanned = YES;
+        ++gs->end_score.empty_cells_next_to_black;
     }
-    else if (board->cell_array[row - 1][col]->cell_value == WHITE &&
-             board->cell_array[row - 1][col]->has_border_been_scanned == NO)
+    else if (gs->board.cell_array[row - 1][col]->cell_value == WHITE &&
+             gs->board.cell_array[row - 1][col]->has_border_been_scanned == NO)
     {
-        board->cell_array[row - 1][col]->has_border_been_scanned = YES;
-        ++es->empty_cells_next_to_white;
+        gs->board.cell_array[row - 1][col]->has_border_been_scanned = YES;
+        ++gs->end_score.empty_cells_next_to_white;
     }
 
-    if (board->cell_array[row][col + 1]->cell_value == EMPTY ||
-        board->cell_array[row][col + 1]->territory_value == BLACK_T ||
-        board->cell_array[row][col + 1]->territory_value == WHITE_T)
+    if (gs->board.cell_array[row][col + 1]->cell_value == EMPTY ||
+        gs->board.cell_array[row][col + 1]->territory_value == BLACK_T ||
+        gs->board.cell_array[row][col + 1]->territory_value == WHITE_T)
 
     {
-        if (board->cell_array[row][col + 1]->has_cell_been_scanned == NO)
+        if (gs->board.cell_array[row][col + 1]->has_cell_been_scanned == NO)
         {
-            board->cell_array[row][col + 1]->has_cell_been_scanned = YES;
-            gs->cells_scanned[++gs->count] = board->cell_array[row][col + 1];
-            scan_empty_cells_for_ownership(board, gs, es, row, col + 1);
+            gs->board.cell_array[row][col + 1]->has_cell_been_scanned = YES;
+            gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col + 1];
+            scan_empty_cells_for_ownership(gs, row, col + 1);
         }
     }
-    else if (board->cell_array[row][col + 1]->cell_value == BLACK &&
-             board->cell_array[row][col + 1]->has_border_been_scanned == NO)
+    else if (gs->board.cell_array[row][col + 1]->cell_value == BLACK &&
+             gs->board.cell_array[row][col + 1]->has_border_been_scanned == NO)
     {
-        board->cell_array[row][col + 1]->has_border_been_scanned = YES;
-        ++es->empty_cells_next_to_black;
+        gs->board.cell_array[row][col + 1]->has_border_been_scanned = YES;
+        ++gs->end_score.empty_cells_next_to_black;
     }
 
-    else if (board->cell_array[row][col + 1]->cell_value == WHITE &&
-             board->cell_array[row][col + 1]->has_border_been_scanned == NO)
+    else if (gs->board.cell_array[row][col + 1]->cell_value == WHITE &&
+             gs->board.cell_array[row][col + 1]->has_border_been_scanned == NO)
     {
-        board->cell_array[row][col + 1]->has_border_been_scanned = YES;
-        ++es->empty_cells_next_to_white;
+        gs->board.cell_array[row][col + 1]->has_border_been_scanned = YES;
+        ++gs->end_score.empty_cells_next_to_white;
     }
 
-    if (board->cell_array[row + 1][col]->cell_value == EMPTY ||
-        board->cell_array[row + 1][col]->territory_value == BLACK_T ||
-        board->cell_array[row + 1][col]->territory_value == WHITE_T)
+    if (gs->board.cell_array[row + 1][col]->cell_value == EMPTY ||
+        gs->board.cell_array[row + 1][col]->territory_value == BLACK_T ||
+        gs->board.cell_array[row + 1][col]->territory_value == WHITE_T)
 
     {
-        if (board->cell_array[row + 1][col]->has_cell_been_scanned == NO)
+        if (gs->board.cell_array[row + 1][col]->has_cell_been_scanned == NO)
         {
-            board->cell_array[row + 1][col]->has_cell_been_scanned = YES;
-            gs->cells_scanned[++gs->count] = board->cell_array[row + 1][col];
-            scan_empty_cells_for_ownership(board, gs, es, row + 1, col);
+            gs->board.cell_array[row + 1][col]->has_cell_been_scanned = YES;
+            gs->cells_scanned[++gs->count] = gs->board.cell_array[row + 1][col];
+            scan_empty_cells_for_ownership(gs, row + 1, col);
         }
     }
-    else if (board->cell_array[row + 1][col]->cell_value == BLACK &&
-             board->cell_array[row + 1][col]->has_border_been_scanned == NO)
+    else if (gs->board.cell_array[row + 1][col]->cell_value == BLACK &&
+             gs->board.cell_array[row + 1][col]->has_border_been_scanned == NO)
     {
-        board->cell_array[row + 1][col]->has_border_been_scanned = YES;
-        ++es->empty_cells_next_to_black;
+        gs->board.cell_array[row + 1][col]->has_border_been_scanned = YES;
+        ++gs->end_score.empty_cells_next_to_black;
     }
 
-    else if (board->cell_array[row + 1][col]->cell_value == WHITE &&
-             board->cell_array[row + 1][col]->has_border_been_scanned == NO)
+    else if (gs->board.cell_array[row + 1][col]->cell_value == WHITE &&
+             gs->board.cell_array[row + 1][col]->has_border_been_scanned == NO)
     {
-        board->cell_array[row + 1][col]->has_border_been_scanned = YES;
-        ++es->empty_cells_next_to_white;
+        gs->board.cell_array[row + 1][col]->has_border_been_scanned = YES;
+        ++gs->end_score.empty_cells_next_to_white;
     }
 
-    if (board->cell_array[row][col - 1]->cell_value == EMPTY ||
-        board->cell_array[row][col - 1]->territory_value == BLACK_T ||
-        board->cell_array[row][col - 1]->territory_value == WHITE_T)
+    if (gs->board.cell_array[row][col - 1]->cell_value == EMPTY ||
+        gs->board.cell_array[row][col - 1]->territory_value == BLACK_T ||
+        gs->board.cell_array[row][col - 1]->territory_value == WHITE_T)
 
     {
-        if (board->cell_array[row][col - 1]->has_cell_been_scanned == NO)
+        if (gs->board.cell_array[row][col - 1]->has_cell_been_scanned == NO)
         {
-            board->cell_array[row][col - 1]->has_cell_been_scanned = YES;
-            gs->cells_scanned[++gs->count] = board->cell_array[row][col - 1];
-            scan_empty_cells_for_ownership(board, gs, es, row, col - 1);
+            gs->board.cell_array[row][col - 1]->has_cell_been_scanned = YES;
+            gs->cells_scanned[++gs->count] = gs->board.cell_array[row][col - 1];
+            scan_empty_cells_for_ownership(gs, row, col - 1);
         }
     }
-    else if (board->cell_array[row][col - 1]->cell_value == BLACK &&
-             board->cell_array[row][col - 1]->has_border_been_scanned == NO)
+    else if (gs->board.cell_array[row][col - 1]->cell_value == BLACK &&
+             gs->board.cell_array[row][col - 1]->has_border_been_scanned == NO)
     {
-        board->cell_array[row][col - 1]->has_border_been_scanned = YES;
-        ++es->empty_cells_next_to_black;
+        gs->board.cell_array[row][col - 1]->has_border_been_scanned = YES;
+        ++gs->end_score.empty_cells_next_to_black;
     }
-    else if (board->cell_array[row][col - 1]->cell_value == WHITE &&
-             board->cell_array[row][col - 1]->has_border_been_scanned == NO)
+    else if (gs->board.cell_array[row][col - 1]->cell_value == WHITE &&
+             gs->board.cell_array[row][col - 1]->has_border_been_scanned == NO)
     {
-        board->cell_array[row][col - 1]->has_border_been_scanned = YES;
-        ++es->empty_cells_next_to_white;
+        gs->board.cell_array[row][col - 1]->has_border_been_scanned = YES;
+        ++gs->end_score.empty_cells_next_to_white;
     }
 }
 
-void place_on_pos(GameState* gs, Board* board, const char* pos)
+void place_on_pos(GameState* gs, const char* pos)
 {
-    for (int i = 0; i < board->play_size + 1; i++)
-        for (int j = 0; j < board->play_size + 1; j++)
+    for (int i = 0; i < gs->board.play_size + 1; i++)
+        for (int j = 0; j < gs->board.play_size + 1; j++)
         {
             {
-                if (board->cell_array[j][i]->cell_value == EMPTY)
+                if (gs->board.cell_array[j][i]->cell_value == EMPTY)
                 {
-                    if (strcmp(board->cell_array[j][i]->position_str, pos) == 0)
+                    if (strcmp(gs->board.cell_array[j][i]->position_str, pos) ==
+                        0)
                     {
                         switch (gs->turn)
                         {
                         case BLACK:
-                            board->cell_array[j][i]->cell_value = BLACK;
+                            gs->board.cell_array[j][i]->cell_value = BLACK;
                             break;
                         case WHITE:
-                            board->cell_array[j][i]->cell_value = WHITE;
+                            gs->board.cell_array[j][i]->cell_value = WHITE;
                             break;
                         }
                         printf("Placed stone on %s.\n", pos);
@@ -1640,7 +1669,7 @@ void* host(void* gs)
         if (len == 4)
             buf[2] = message[2];
         printf("Received: %s\n", buf);
-        place_on_pos(((GameState*)gs), &((GameState*)gs)->board, buf);
+        place_on_pos(((GameState*)gs), buf);
         free(buf);
     }
     pthread_mutex_unlock(&((GameState*)gs)->mutex);
