@@ -43,6 +43,8 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es);
 
 void reset_scan_count_for_all_cells(Board* board, GameState* gs);
 
+void reset_border_scan_count_for_all_cells(Board* board, GameState* gs);
+
 void determine_territory(Board* board, GameState* gs, EndScore* es);
 
 void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,

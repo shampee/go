@@ -11,6 +11,7 @@ typedef struct
     int      cell_value;
     int      has_cell_been_scanned;
     int      has_liberty_been_scanned;
+    int      has_border_been_scanned;
     int      territory_value;
     char     position_str[3];
 } Cell;

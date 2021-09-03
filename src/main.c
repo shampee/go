@@ -665,6 +665,7 @@ void init_board(Settings* s, Board* board, int play_size)
         board->cell_array[row][col]->dims.y                   = y;
         board->cell_array[row][col]->has_cell_been_scanned    = NO;
         board->cell_array[row][col]->has_liberty_been_scanned = NO;
+        board->cell_array[row][col]->has_border_been_scanned  = NO;
 
         x += grid_cell_size;
         col++;
@@ -974,6 +975,7 @@ void reset_board(Board* board, GameState* gs)
         board->cell_array[row][col]->territory_value          = NO_T;
         board->cell_array[row][col]->has_cell_been_scanned    = NO;
         board->cell_array[row][col]->has_liberty_been_scanned = NO;
+        board->cell_array[row][col]->has_border_been_scanned  = NO;
         col++;
         if (col > grid_size)
         {
@@ -1184,6 +1186,7 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                 es->empty_cells_next_to_black = 0;
                 es->empty_cells_next_to_white = 0;
                 reset_liberty_scan_count_for_all_cells(board, gs);
+                reset_border_scan_count_for_all_cells(board, gs);
             }
 
             col++;
@@ -1259,6 +1262,7 @@ void mark_dead_stones(Board* board, GameState* gs, EndScore* es)
                 es->empty_cells_next_to_black = 0;
                 es->empty_cells_next_to_white = 0;
                 reset_liberty_scan_count_for_all_cells(board, gs);
+                reset_border_scan_count_for_all_cells(board, gs);
             }
 
             col++;
@@ -1311,6 +1315,24 @@ void reset_liberty_scan_count_for_all_cells(Board* board, GameState* gs)
     }
 }
 
+void reset_border_scan_count_for_all_cells(Board* board, GameState* gs)
+{
+    int row       = 0;
+    int col       = 0;
+    int grid_size = board->play_size + 1;
+
+    while (row <= grid_size)
+    {
+        board->cell_array[row][col]->has_border_been_scanned = NO;
+        col++;
+        if (col > grid_size)
+        {
+            col = 0;
+            row++;
+        }
+    }
+}
+
 void determine_territory(Board* board, GameState* gs, EndScore* es)
 {
     int row       = 0;
@@ -1341,6 +1363,7 @@ void determine_territory(Board* board, GameState* gs, EndScore* es)
             gs->count                     = 0;
             es->empty_cells_next_to_black = 0;
             es->empty_cells_next_to_white = 0;
+            reset_border_scan_count_for_all_cells(board, gs);
         }
 
         col++;
@@ -1368,10 +1391,18 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
             scan_empty_cells_for_ownership(board, gs, es, row - 1, col);
         }
     }
-    else if (board->cell_array[row - 1][col]->cell_value == BLACK)
+    else if (board->cell_array[row - 1][col]->cell_value == BLACK &&
+             board->cell_array[row - 1][col]->has_border_been_scanned == NO)
+    {
+        board->cell_array[row - 1][col]->has_border_been_scanned = YES;
         ++es->empty_cells_next_to_black;
-    else if (board->cell_array[row - 1][col]->cell_value == WHITE)
+    }
+    else if (board->cell_array[row - 1][col]->cell_value == WHITE &&
+             board->cell_array[row - 1][col]->has_border_been_scanned == NO)
+    {
+        board->cell_array[row - 1][col]->has_border_been_scanned = YES;
         ++es->empty_cells_next_to_white;
+    }
 
     if (board->cell_array[row][col + 1]->cell_value == EMPTY ||
         board->cell_array[row][col + 1]->territory_value == BLACK_T ||
@@ -1385,10 +1416,19 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
             scan_empty_cells_for_ownership(board, gs, es, row, col + 1);
         }
     }
-    else if (board->cell_array[row][col + 1]->cell_value == BLACK)
+    else if (board->cell_array[row][col + 1]->cell_value == BLACK &&
+             board->cell_array[row][col + 1]->has_border_been_scanned == NO)
+    {
+        board->cell_array[row][col + 1]->has_border_been_scanned = YES;
         ++es->empty_cells_next_to_black;
-    else if (board->cell_array[row][col + 1]->cell_value == WHITE)
+    }
+
+    else if (board->cell_array[row][col + 1]->cell_value == WHITE &&
+             board->cell_array[row][col + 1]->has_border_been_scanned == NO)
+    {
+        board->cell_array[row][col + 1]->has_border_been_scanned = YES;
         ++es->empty_cells_next_to_white;
+    }
 
     if (board->cell_array[row + 1][col]->cell_value == EMPTY ||
         board->cell_array[row + 1][col]->territory_value == BLACK_T ||
@@ -1402,10 +1442,19 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
             scan_empty_cells_for_ownership(board, gs, es, row + 1, col);
         }
     }
-    else if (board->cell_array[row + 1][col]->cell_value == BLACK)
+    else if (board->cell_array[row + 1][col]->cell_value == BLACK &&
+             board->cell_array[row + 1][col]->has_border_been_scanned == NO)
+    {
+        board->cell_array[row + 1][col]->has_border_been_scanned = YES;
         ++es->empty_cells_next_to_black;
-    else if (board->cell_array[row + 1][col]->cell_value == WHITE)
+    }
+
+    else if (board->cell_array[row + 1][col]->cell_value == WHITE &&
+             board->cell_array[row + 1][col]->has_border_been_scanned == NO)
+    {
+        board->cell_array[row + 1][col]->has_border_been_scanned = YES;
         ++es->empty_cells_next_to_white;
+    }
 
     if (board->cell_array[row][col - 1]->cell_value == EMPTY ||
         board->cell_array[row][col - 1]->territory_value == BLACK_T ||
@@ -1419,10 +1468,18 @@ void scan_empty_cells_for_ownership(Board* board, GameState* gs, EndScore* es,
             scan_empty_cells_for_ownership(board, gs, es, row, col - 1);
         }
     }
-    else if (board->cell_array[row][col - 1]->cell_value == BLACK)
+    else if (board->cell_array[row][col - 1]->cell_value == BLACK &&
+             board->cell_array[row][col - 1]->has_border_been_scanned == NO)
+    {
+        board->cell_array[row][col - 1]->has_border_been_scanned = YES;
         ++es->empty_cells_next_to_black;
-    else if (board->cell_array[row][col - 1]->cell_value == WHITE)
+    }
+    else if (board->cell_array[row][col - 1]->cell_value == WHITE &&
+             board->cell_array[row][col - 1]->has_border_been_scanned == NO)
+    {
+        board->cell_array[row][col - 1]->has_border_been_scanned = YES;
         ++es->empty_cells_next_to_white;
+    }
 }
 
 void place_on_pos(GameState* gs, Board* board, const char* pos)
