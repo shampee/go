@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
 
     // load image for dot
     SDL_Texture* dot_image;
-    dot_image = get_image("dot.png", app.renderer);
+    dot_image = get_image("assets/dot.png", app.renderer);
 
     SDL_bool quit         = SDL_FALSE;
     SDL_bool mouse_active = SDL_FALSE;
