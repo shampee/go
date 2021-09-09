@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
 
     // load image for dot
     SDL_Texture* dot_image;
-    dot_image = get_image("dot.png", app.renderer);
+    dot_image = get_image("assets/dot.png", app.renderer);
 
     SDL_bool quit         = SDL_FALSE;
     SDL_bool mouse_active = SDL_FALSE;
@@ -198,6 +198,7 @@ int main(int argc, char* argv[])
                     else if (score_phase == SDL_TRUE)
                     {
                         toggle_dead_stones(&s, &gs, event.motion);
+                        determine_territory(&gs);
                     }
                 }
 
@@ -1396,18 +1397,30 @@ void determine_territory(GameState* gs)
                 gs->end_score.empty_cells_next_to_white)
             {
                 while (gs->count > 0)
-                    gs->cells_scanned[gs->count--]->territory_value = BLACK_T;
+                {
+                    if (gs->cells_scanned[gs->count]->cell_value == EMPTY)
+                        gs->cells_scanned[gs->count]->territory_value = BLACK_T;
+                    --gs->count;
+                }
             }
             else if (gs->end_score.empty_cells_next_to_black <
                      gs->end_score.empty_cells_next_to_white)
             {
                 while (gs->count > 0)
-                    gs->cells_scanned[gs->count--]->territory_value = WHITE_T;
+                {
+                    if (gs->cells_scanned[gs->count]->cell_value == EMPTY)
+                        gs->cells_scanned[gs->count]->territory_value = WHITE_T;
+                    --gs->count;
+                }
             }
             else
             {
                 while (gs->count > 0)
-                    gs->cells_scanned[gs->count--]->territory_value = NO_T;
+                {
+                    if (gs->cells_scanned[gs->count]->cell_value == EMPTY)
+                        gs->cells_scanned[gs->count]->territory_value = NO_T;
+                    --gs->count;
+                }
             }
             gs->count                               = 0;
             gs->end_score.empty_cells_next_to_black = 0;
