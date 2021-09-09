@@ -3,3 +3,4 @@ vgcore*
 /bin
 go
 core
+.gdb_history
