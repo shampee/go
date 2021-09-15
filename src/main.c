@@ -1408,6 +1408,28 @@ void determine_territory(GameState* gs)
                     gs->cells_scanned[gs->count]->territory_value = WHITE_T;
             }
 
+            else if (gs->count == 2)
+            {
+                if (gs->end_score.empty_cells_next_to_black >= 2 &&
+                    gs->end_score.empty_cells_next_to_black <= 4 &&
+                    gs->end_score.empty_cells_next_to_white >= 2 &&
+                    gs->end_score.empty_cells_next_to_white <= 4)
+                    while (gs->count > 0)
+                        gs->cells_scanned[gs->count--]->territory_value = NO_T;
+
+                else if (gs->end_score.empty_cells_next_to_black >
+                         gs->end_score.empty_cells_next_to_white)
+                    while (gs->count > 0)
+                        gs->cells_scanned[gs->count--]->territory_value =
+                            BLACK_T;
+
+                else if (gs->end_score.empty_cells_next_to_black <
+                         gs->end_score.empty_cells_next_to_white)
+                    while (gs->count > 0)
+                        gs->cells_scanned[gs->count--]->territory_value =
+                            WHITE_T;
+            }
+
             else if (gs->end_score.empty_cells_next_to_black >
                      gs->end_score.empty_cells_next_to_white)
             {
