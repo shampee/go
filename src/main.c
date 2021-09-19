@@ -1148,10 +1148,10 @@ void mark_dead_stones(GameState* gs)
                         gs->cells_scanned[gs->count--]->territory_value =
                             mark_color;
                 }
-                gs->liberties                           = 0;
-                gs->count                               = 0;
-                gs->end_score.empty_cells_next_to_black = 0;
-                gs->end_score.empty_cells_next_to_white = 0;
+                gs->liberties                                  = 0;
+                gs->count                                      = 0;
+                gs->end_score.black_stones_next_to_empty_cells = 0;
+                gs->end_score.white_stones_next_to_empty_cells = 0;
                 reset_liberty_scan_count_for_all_cells(gs);
             }
 
@@ -1207,11 +1207,11 @@ void mark_dead_stones(GameState* gs)
 
                     scan_empty_cells_for_ownership(gs, row, col);
 
-                    if (gs->end_score.empty_cells_next_to_black >
-                        gs->end_score.empty_cells_next_to_white)
+                    if (gs->end_score.black_stones_next_to_empty_cells >
+                        gs->end_score.white_stones_next_to_empty_cells)
                         territory_color = BLACK;
-                    else if (gs->end_score.empty_cells_next_to_black <
-                             gs->end_score.empty_cells_next_to_white)
+                    else if (gs->end_score.black_stones_next_to_empty_cells <
+                             gs->end_score.white_stones_next_to_empty_cells)
                         territory_color = WHITE;
 
                     if (stone_color != territory_color)
@@ -1225,10 +1225,10 @@ void mark_dead_stones(GameState* gs)
                         cell_storage[i--]->cell_value = stone_color;
                 }
 
-                gs->liberties                           = 0;
-                gs->count                               = 0;
-                gs->end_score.empty_cells_next_to_black = 0;
-                gs->end_score.empty_cells_next_to_white = 0;
+                gs->liberties                                  = 0;
+                gs->count                                      = 0;
+                gs->end_score.black_stones_next_to_empty_cells = 0;
+                gs->end_score.white_stones_next_to_empty_cells = 0;
                 reset_liberty_scan_count_for_all_cells(gs);
                 reset_border_scan_count_for_all_cells(gs);
             }
@@ -1283,11 +1283,11 @@ void mark_dead_stones(GameState* gs)
 
                     scan_empty_cells_for_ownership(gs, row, col);
 
-                    if (gs->end_score.empty_cells_next_to_black >
-                        gs->end_score.empty_cells_next_to_white)
+                    if (gs->end_score.black_stones_next_to_empty_cells >
+                        gs->end_score.white_stones_next_to_empty_cells)
                         territory_color = BLACK;
-                    else if (gs->end_score.empty_cells_next_to_black <
-                             gs->end_score.empty_cells_next_to_white)
+                    else if (gs->end_score.black_stones_next_to_empty_cells <
+                             gs->end_score.white_stones_next_to_empty_cells)
                         territory_color = WHITE;
 
                     if (stone_color != territory_color)
@@ -1301,10 +1301,10 @@ void mark_dead_stones(GameState* gs)
                         cell_storage[i--]->cell_value = stone_color;
                 }
 
-                gs->liberties                           = 0;
-                gs->count                               = 0;
-                gs->end_score.empty_cells_next_to_black = 0;
-                gs->end_score.empty_cells_next_to_white = 0;
+                gs->liberties                                  = 0;
+                gs->count                                      = 0;
+                gs->end_score.black_stones_next_to_empty_cells = 0;
+                gs->end_score.white_stones_next_to_empty_cells = 0;
                 reset_liberty_scan_count_for_all_cells(gs);
                 reset_border_scan_count_for_all_cells(gs);
             }
@@ -1396,26 +1396,26 @@ void determine_territory(GameState* gs)
             if (gs->count <= 2 &&
                 gs->cells_scanned[gs->count]->cell_value == EMPTY)
             {
-                if (gs->end_score.empty_cells_next_to_black >= 1 &&
-                    gs->end_score.empty_cells_next_to_white >= 1)
+                if (gs->end_score.black_stones_next_to_empty_cells >= 1 &&
+                    gs->end_score.white_stones_next_to_empty_cells >= 1)
                     while (gs->count > 0)
                         gs->cells_scanned[gs->count--]->territory_value = NO_T;
 
-                else if (gs->end_score.empty_cells_next_to_black >
-                         gs->end_score.empty_cells_next_to_white)
+                else if (gs->end_score.black_stones_next_to_empty_cells >
+                         gs->end_score.white_stones_next_to_empty_cells)
                     while (gs->count > 0)
                         gs->cells_scanned[gs->count--]->territory_value =
                             BLACK_T;
 
-                else if (gs->end_score.empty_cells_next_to_black <
-                         gs->end_score.empty_cells_next_to_white)
+                else if (gs->end_score.black_stones_next_to_empty_cells <
+                         gs->end_score.white_stones_next_to_empty_cells)
                     while (gs->count > 0)
                         gs->cells_scanned[gs->count--]->territory_value =
                             WHITE_T;
             }
 
-            else if (gs->end_score.empty_cells_next_to_black >
-                     gs->end_score.empty_cells_next_to_white)
+            else if (gs->end_score.black_stones_next_to_empty_cells >
+                     gs->end_score.white_stones_next_to_empty_cells)
             {
                 while (gs->count > 0)
                 {
@@ -1424,8 +1424,8 @@ void determine_territory(GameState* gs)
                     --gs->count;
                 }
             }
-            else if (gs->end_score.empty_cells_next_to_black <
-                     gs->end_score.empty_cells_next_to_white)
+            else if (gs->end_score.black_stones_next_to_empty_cells <
+                     gs->end_score.white_stones_next_to_empty_cells)
             {
                 while (gs->count > 0)
                 {
@@ -1443,9 +1443,9 @@ void determine_territory(GameState* gs)
                     --gs->count;
                 }
             }
-            gs->count                               = 0;
-            gs->end_score.empty_cells_next_to_black = 0;
-            gs->end_score.empty_cells_next_to_white = 0;
+            gs->count                                      = 0;
+            gs->end_score.black_stones_next_to_empty_cells = 0;
+            gs->end_score.white_stones_next_to_empty_cells = 0;
             reset_border_scan_count_for_all_cells(gs);
         }
 
@@ -1540,13 +1540,13 @@ void scan_empty_cells_for_ownership(GameState* gs, int row, int col)
              gs->board.cell_array[row - 1][col]->has_border_been_scanned == NO)
     {
         gs->board.cell_array[row - 1][col]->has_border_been_scanned = YES;
-        ++gs->end_score.empty_cells_next_to_black;
+        ++gs->end_score.black_stones_next_to_empty_cells;
     }
     else if (gs->board.cell_array[row - 1][col]->cell_value == WHITE &&
              gs->board.cell_array[row - 1][col]->has_border_been_scanned == NO)
     {
         gs->board.cell_array[row - 1][col]->has_border_been_scanned = YES;
-        ++gs->end_score.empty_cells_next_to_white;
+        ++gs->end_score.white_stones_next_to_empty_cells;
     }
 
     if (gs->board.cell_array[row][col + 1]->cell_value == EMPTY ||
@@ -1565,14 +1565,14 @@ void scan_empty_cells_for_ownership(GameState* gs, int row, int col)
              gs->board.cell_array[row][col + 1]->has_border_been_scanned == NO)
     {
         gs->board.cell_array[row][col + 1]->has_border_been_scanned = YES;
-        ++gs->end_score.empty_cells_next_to_black;
+        ++gs->end_score.black_stones_next_to_empty_cells;
     }
 
     else if (gs->board.cell_array[row][col + 1]->cell_value == WHITE &&
              gs->board.cell_array[row][col + 1]->has_border_been_scanned == NO)
     {
         gs->board.cell_array[row][col + 1]->has_border_been_scanned = YES;
-        ++gs->end_score.empty_cells_next_to_white;
+        ++gs->end_score.white_stones_next_to_empty_cells;
     }
 
     if (gs->board.cell_array[row + 1][col]->cell_value == EMPTY ||
@@ -1591,14 +1591,14 @@ void scan_empty_cells_for_ownership(GameState* gs, int row, int col)
              gs->board.cell_array[row + 1][col]->has_border_been_scanned == NO)
     {
         gs->board.cell_array[row + 1][col]->has_border_been_scanned = YES;
-        ++gs->end_score.empty_cells_next_to_black;
+        ++gs->end_score.black_stones_next_to_empty_cells;
     }
 
     else if (gs->board.cell_array[row + 1][col]->cell_value == WHITE &&
              gs->board.cell_array[row + 1][col]->has_border_been_scanned == NO)
     {
         gs->board.cell_array[row + 1][col]->has_border_been_scanned = YES;
-        ++gs->end_score.empty_cells_next_to_white;
+        ++gs->end_score.white_stones_next_to_empty_cells;
     }
 
     if (gs->board.cell_array[row][col - 1]->cell_value == EMPTY ||
@@ -1617,13 +1617,13 @@ void scan_empty_cells_for_ownership(GameState* gs, int row, int col)
              gs->board.cell_array[row][col - 1]->has_border_been_scanned == NO)
     {
         gs->board.cell_array[row][col - 1]->has_border_been_scanned = YES;
-        ++gs->end_score.empty_cells_next_to_black;
+        ++gs->end_score.black_stones_next_to_empty_cells;
     }
     else if (gs->board.cell_array[row][col - 1]->cell_value == WHITE &&
              gs->board.cell_array[row][col - 1]->has_border_been_scanned == NO)
     {
         gs->board.cell_array[row][col - 1]->has_border_been_scanned = YES;
-        ++gs->end_score.empty_cells_next_to_white;
+        ++gs->end_score.white_stones_next_to_empty_cells;
     }
 }
 

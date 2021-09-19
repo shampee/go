@@ -37,8 +37,8 @@ typedef struct
 
 typedef struct
 {
-    int empty_cells_next_to_black;
-    int empty_cells_next_to_white;
+    int black_stones_next_to_empty_cells;
+    int white_stones_next_to_empty_cells;
 } EndScore;
 
 typedef enum { DEBUG, REGULAR } GameMode;
