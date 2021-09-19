@@ -1393,27 +1393,11 @@ void determine_territory(GameState* gs)
 
             scan_empty_cells_for_ownership(gs, row, col);
 
-            if (gs->count == 1)
+            if (gs->count <= 2 &&
+                gs->cells_scanned[gs->count]->cell_value == EMPTY)
             {
                 if (gs->end_score.empty_cells_next_to_black >= 1 &&
-                    gs->end_score.empty_cells_next_to_black <= 3 &&
-                    gs->end_score.empty_cells_next_to_white >= 1 &&
-                    gs->end_score.empty_cells_next_to_white <= 3)
-                    gs->cells_scanned[gs->count]->territory_value = NO_T;
-
-                else if (gs->end_score.empty_cells_next_to_black)
-                    gs->cells_scanned[gs->count]->territory_value = BLACK_T;
-
-                else if (gs->end_score.empty_cells_next_to_white)
-                    gs->cells_scanned[gs->count]->territory_value = WHITE_T;
-            }
-
-            else if (gs->count == 2)
-            {
-                if (gs->end_score.empty_cells_next_to_black >= 2 &&
-                    gs->end_score.empty_cells_next_to_black <= 4 &&
-                    gs->end_score.empty_cells_next_to_white >= 2 &&
-                    gs->end_score.empty_cells_next_to_white <= 4)
+                    gs->end_score.empty_cells_next_to_white >= 1)
                     while (gs->count > 0)
                         gs->cells_scanned[gs->count--]->territory_value = NO_T;
 
