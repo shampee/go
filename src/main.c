@@ -47,13 +47,12 @@ int main(int argc, char* argv[])
     init_board(&s, &gs.board, gs.board.play_size);
 
     // Colors
-    SDL_Color grid_background         = { 222, 184, 135, 255 };
-    SDL_Color grid_line_color         = { 0, 0, 0, 255 };
-    SDL_Color grid_cursor_ghost_color = { 240, 198, 116, 255 };
-    SDL_Color black                   = { 0, 0, 0, 255 };
-    SDL_Color white                   = { 255, 255, 255, 255 };
-    SDL_Color black_ter               = { 0, 0, 0, 127 };
-    SDL_Color white_ter               = { 255, 255, 255, 127 };
+    SDL_Color grid_background = { 222, 184, 135, 255 };
+    SDL_Color grid_line_color = { 0, 0, 0, 255 };
+    SDL_Color black           = { 0, 0, 0, 255 };
+    SDL_Color white           = { 255, 255, 255, 255 };
+    SDL_Color black_ter       = { 0, 0, 0, 127 };
+    SDL_Color white_ter       = { 255, 255, 255, 127 };
 
     // load images for stones
     SDL_Texture* black_stone;
@@ -160,6 +159,7 @@ int main(int argc, char* argv[])
                     "%c%d",
                     alphabet_char,
                     num_char);
+            // Shouldn't this be something like if (j == gs.board.play_size) ?
             if (j == 9)
             {
                 num_char = gs.board.play_size + 2;
@@ -475,16 +475,20 @@ int main(int argc, char* argv[])
         // Draw grid ghost cursor.
         if (mouse_active && mouse_hover)
         {
-            SDL_SetRenderDrawColor(app.renderer,
-                                   grid_cursor_ghost_color.r,
-                                   grid_cursor_ghost_color.g,
-                                   grid_cursor_ghost_color.b,
-                                   grid_cursor_ghost_color.a);
-            if (gs.board.grid_cursor_ghost->cell_value == EMPTY)
+            if (gs.board.grid_cursor_ghost->cell_value == EMPTY &&
+                score_phase == SDL_FALSE)
+            {
+                if (gs.turn == BLACK)
+                    SDL_SetRenderDrawColor(
+                        app.renderer, black.r, black.g, black.b, black.a);
+                else if (gs.turn == WHITE)
+                    SDL_SetRenderDrawColor(
+                        app.renderer, white.r, white.g, white.b, white.a);
+
                 SDL_RenderFillRect(app.renderer,
                                    &gs.board.grid_cursor_ghost->dims);
+            }
         }
-
         // Draw stones.
         for (row = 0, col = 0; row <= grid_size;)
         {
