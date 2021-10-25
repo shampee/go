@@ -241,18 +241,14 @@ int main(int argc, char* argv[])
 
         get_window_size(&s);
         update_board(&s, &gs.board);
-        // Dirty
+
+        /*
         switch (gs.state)
         {
         case MENU:
             break;
         case HOST: {
-            if (!gs.hosting)
-            {
-                pthread_t tid;
-                pthread_create(&tid, NULL, host, &gs);
-                gs.hosting = SDL_TRUE;
-            }
+            host_receive_stone(&gs);
             break;
         }
         case JOIN: {
@@ -263,6 +259,7 @@ int main(int argc, char* argv[])
         case PLAY:
             break;
         }
+        */
         grid_cell_size = s.window_size.h / (grid_size + 1);
         blackb.w       = grid_cell_size;
         blackb.h       = grid_cell_size;
@@ -544,7 +541,26 @@ int main(int argc, char* argv[])
             app.renderer, gs.score.white_sc_texture, NULL, &white_sc_rect);
 
         SDL_RenderPresent(app.renderer);
+
+        // Dirty
+        switch (gs.state)
+        {
+        case MENU:
+            break;
+        case HOST: {
+            host_receive_stone(&gs);
+            break;
+        }
+        case JOIN: {
+            join_send_stone(&gs);
+            break;
+        }
+        case PLAY:
+            break;
+        }
     }
+    SDLNet_TCP_Close(gs.net.server);
+    SDLNet_TCP_Close(gs.net.client);
 
     return 0;
 }
@@ -626,18 +642,32 @@ void init_sdl(Settings* s, GameState* gs, char argc, char* argv[])
             // Default port
             gs->net.port = (Uint16)7777;
 
-        if (SDLNet_ResolveHost(&gs->net.ip, NULL, gs->net.port) < 0)
-        {
-            printf("SDLNet_ResolveHost: %s\n", SDLNet_GetError());
-            exit(1);
-        }
-        printf("IP: %d, Port: %d", gs->net.ip.host, gs->net.ip.port);
         if (gs->state == HOST)
-            gs->net.server = SDLNet_TCP_Open(&gs->net.ip);
-        if (!gs->net.server)
         {
-            printf("SDLNet_TCP_Open: %s\n", SDLNet_GetError());
-            exit(1);
+            if (SDLNet_ResolveHost(&gs->net.ip, NULL, gs->net.port) < 0)
+            {
+                fprintf(stderr, "SDLNet_ResolveHost: %s\n", SDLNet_GetError());
+                exit(1);
+            }
+            if (!(gs->net.server = SDLNet_TCP_Open(&gs->net.ip)))
+            {
+                fprintf(stderr, "SDLNet_TCP_Open: %s\n", SDLNet_GetError());
+                exit(1);
+            }
+        }
+
+        else if (gs->state == JOIN)
+        {
+            if (SDLNet_ResolveHost(&gs->net.ip, "127.0.0.1", gs->net.port) < 0)
+            {
+                fprintf(stderr, "SDLNet_ResolveHost: %s\n", SDLNet_GetError());
+                exit(1);
+            }
+            if (!(gs->net.client = SDLNet_TCP_Open(&gs->net.ip)))
+            {
+                fprintf(stderr, "SDLNet_TCP_Open: %s\n", SDLNet_GetError());
+                exit(EXIT_FAILURE);
+            }
         }
     }
     else
@@ -661,6 +691,9 @@ void cleanup(void)
     TTF_Quit();
 
     SDLNet_Quit();
+
+    // SDLNet_TCP_Close(gs->net.server);
+    // SDLNet_TCP_Close(gs->net.client);
 
     SDL_Quit();
 }
@@ -1658,6 +1691,7 @@ void place_on_pos(GameState* gs, const char* pos)
         }
 }
 
+/* 
 void* host(void* gs)
 {
     pthread_mutex_lock(&((GameState*)gs)->mutex);
@@ -1711,4 +1745,86 @@ void* host(void* gs)
         free(buf);
     }
     pthread_mutex_unlock(&((GameState*)gs)->mutex);
+}
+*/
+
+void host_receive_stone(GameState* gs)
+{
+    int  quit, quit2;
+    char buffer[512];
+
+    /* Wait for a connection, send data and term */
+    quit = 0;
+    while (!quit)
+    {
+        /* This check the sd if there is a pending connection. * If there is one, accept that, and open a new socket for communicating */
+        if ((gs->net.client = SDLNet_TCP_Accept(gs->net.server)))
+        {
+            /* Now we can communicate with the client using csd socket * sd will remain opened waiting other connections */
+
+            /* Get the remote address */
+            if ((gs->net.remote_ip = SDLNet_TCP_GetPeerAddress(gs->net.client)))
+                /* Print the address, converting in the host format */
+                printf("Host connected: %x %d\n",
+                       SDLNet_Read32(&gs->net.remote_ip->host),
+                       SDLNet_Read16(&gs->net.remote_ip->port));
+            else
+                fprintf(stderr,
+                        "SDLNet_TCP_GetPeerAddress: %s\n",
+                        SDLNet_GetError());
+
+            quit2 = 0;
+            while (!quit2)
+            {
+                if (SDLNet_TCP_Recv(gs->net.client, buffer, 512) > 0)
+                {
+                    printf("Client say: %s\n", buffer);
+
+                    if (strcmp(buffer, "exit") ==
+                        0) /* Terminate this connection */
+                    {
+                        quit2 = 1;
+                        quit  = 1;
+                        printf("Terminate connection\n");
+                    }
+                }
+            }
+            /* Close the client socket */
+            SDLNet_TCP_Close(gs->net.client);
+        }
+    }
+
+    SDLNet_TCP_Close(gs->net.server);
+    SDLNet_Quit();
+
+    return;
+}
+
+void join_send_stone(GameState* gs)
+{
+    int  quit, len;
+    char buffer[512];
+
+    /* Send messages */
+    quit = 0;
+    while (!quit)
+    {
+        printf("Write something:\n>");
+        scanf("%s", buffer);
+
+        len = strlen(buffer) + 1;
+        if (SDLNet_TCP_Send(gs->net.client, (void*)buffer, len) < len)
+        {
+            fprintf(stderr, "SDLNet_TCP_Send: %s\n", SDLNet_GetError());
+            exit(EXIT_FAILURE);
+        }
+
+        if (strcmp(buffer, "exit") == 0)
+            quit = 1;
+    }
+
+    SDLNet_TCP_Close(gs->net.client);
+    SDLNet_Quit();
+
+    return;
 }

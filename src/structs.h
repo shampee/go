@@ -63,12 +63,12 @@ typedef struct
     pthread_mutex_t mutex;
     struct
     {
-        IPaddress ip;
-        IPaddress remote_ip;
-        TCPsocket client;
-        TCPsocket server;
-        Uint32    ipaddr;
-        Uint16    port;
+        IPaddress  ip;
+        IPaddress* remote_ip;
+        TCPsocket  client;
+        TCPsocket  server;
+        Uint32     ipaddr;
+        Uint16     port;
 
     } net;
 } GameState;

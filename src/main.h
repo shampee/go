@@ -50,3 +50,5 @@ void scan_empty_cells_for_ownership(GameState* gs, int row, int col);
 void  place_on_pos(GameState* s, const char* pos);
 void* host(void* vargp);
 void* join(void* vargp);
+void  host_receive_stone(GameState* gs);
+void  join_send_stone(GameState* gs);
