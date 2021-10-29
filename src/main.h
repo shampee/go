@@ -52,3 +52,4 @@ void* host(void* vargp);
 void* join(void* vargp);
 void  host_receive_stone(GameState* gs);
 void  join_send_stone(GameState* gs);
+void  get_client(GameState* gs);

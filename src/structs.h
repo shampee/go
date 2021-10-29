@@ -69,6 +69,7 @@ typedef struct
         TCPsocket  server;
         Uint32     ipaddr;
         Uint16     port;
+        int        got_client;
 
     } net;
 } GameState;

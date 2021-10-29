@@ -548,6 +548,8 @@ int main(int argc, char* argv[])
         case MENU:
             break;
         case HOST: {
+            if (!gs.net.got_client)
+                get_client(&gs);
             host_receive_stone(&gs);
             break;
         }
@@ -654,6 +656,7 @@ void init_sdl(Settings* s, GameState* gs, char argc, char* argv[])
                 fprintf(stderr, "SDLNet_TCP_Open: %s\n", SDLNet_GetError());
                 exit(1);
             }
+            gs->net.got_client = 0;
         }
 
         else if (gs->state == JOIN)
@@ -1748,47 +1751,43 @@ void* host(void* gs)
 }
 */
 
-void host_receive_stone(GameState* gs)
+void get_client(GameState* gs)
 {
-    int  quit, quit2;
-    char buffer[512];
-
-    /* Wait for a connection, send data and term */
-    quit = 0;
-    while (!quit)
+    while (1)
     {
-        /* This check the sd if there is a pending connection. * If there is one, accept that, and open a new socket for communicating */
         if ((gs->net.client = SDLNet_TCP_Accept(gs->net.server)))
         {
-            /* Now we can communicate with the client using csd socket * sd will remain opened waiting other connections */
-
-            /* Get the remote address */
             if ((gs->net.remote_ip = SDLNet_TCP_GetPeerAddress(gs->net.client)))
-                /* Print the address, converting in the host format */
+            {
                 printf("Host connected: %x %d\n",
                        SDLNet_Read32(&gs->net.remote_ip->host),
                        SDLNet_Read16(&gs->net.remote_ip->port));
+                gs->net.got_client = 1;
+                return;
+            }
+
             else
                 fprintf(stderr,
                         "SDLNet_TCP_GetPeerAddress: %s\n",
                         SDLNet_GetError());
+        }
+    }
+}
+void host_receive_stone(GameState* gs)
+{
+    char buffer[512];
+    while (1)
+    {
+        if (SDLNet_TCP_Recv(gs->net.client, buffer, 512) > 0)
+        {
+            printf("Client say: %s\n", buffer);
 
-            quit2 = 0;
-            while (!quit2)
+            if (strcmp(buffer, "exit") == 0) /* Terminate this connection */
             {
-                if (SDLNet_TCP_Recv(gs->net.client, buffer, 512) > 0)
-                {
-                    printf("Client say: %s\n", buffer);
-
-                    if (strcmp(buffer, "exit") ==
-                        0) /* Terminate this connection */
-                    {
-                        SDLNet_TCP_Close(gs->net.client);
-                        SDLNet_TCP_Close(gs->net.server);
-                        printf("Terminate connection\n");
-                        exit(0);
-                    }
-                }
+                SDLNet_TCP_Close(gs->net.client);
+                SDLNet_TCP_Close(gs->net.server);
+                printf("Terminate connection\n");
+                exit(0);
             }
         }
     }
@@ -1797,12 +1796,11 @@ void host_receive_stone(GameState* gs)
 
 void join_send_stone(GameState* gs)
 {
-    int  quit, len;
+    int  len;
     char buffer[512];
 
     /* Send messages */
-    quit = 0;
-    while (!quit)
+    while (1)
     {
         printf("Write something:\n>");
         scanf("%s", buffer);
