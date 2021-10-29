@@ -1783,20 +1783,15 @@ void host_receive_stone(GameState* gs)
                     if (strcmp(buffer, "exit") ==
                         0) /* Terminate this connection */
                     {
-                        quit2 = 1;
-                        quit  = 1;
+                        SDLNet_TCP_Close(gs->net.client);
+                        SDLNet_TCP_Close(gs->net.server);
                         printf("Terminate connection\n");
+                        exit(0);
                     }
                 }
             }
-            /* Close the client socket */
-            SDLNet_TCP_Close(gs->net.client);
         }
     }
-
-    SDLNet_TCP_Close(gs->net.server);
-    SDLNet_Quit();
-
     return;
 }
 
@@ -1820,11 +1815,11 @@ void join_send_stone(GameState* gs)
         }
 
         if (strcmp(buffer, "exit") == 0)
-            quit = 1;
+        {
+            SDLNet_TCP_Close(gs->net.client);
+            printf("Terminate connection\n");
+            exit(0);
+        }
     }
-
-    SDLNet_TCP_Close(gs->net.client);
-    SDLNet_Quit();
-
     return;
 }
