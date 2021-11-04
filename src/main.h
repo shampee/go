@@ -46,8 +46,9 @@ void determine_territory(GameState* gs);
 void toggle_dead_stones(Settings* s, GameState* gs, SDL_MouseMotionEvent m);
 
 void scan_empty_cells_for_ownership(GameState* gs, int row, int col);
+void wait_for_join(GameState* gs);
 
-void  place_on_pos(GameState* s, const char* pos);
+void  place_on_pos(GameState* gs, const char* pos);
 void* host(void* vargp);
 void* join(void* vargp);
 void  host_receive_stone(GameState* gs);

@@ -550,11 +550,26 @@ int main(int argc, char* argv[])
         case HOST: {
             if (!gs.net.got_client)
                 get_client(&gs);
-            host_receive_stone(&gs);
+            if (!gs.hosting)
+            {
+                SDL_Thread* thread;
+                thread = SDL_CreateThread((void*)host_receive_stone,
+                                          "host_receive_stone",
+                                          (GameState*)&gs);
+
+                gs.hosting = SDL_TRUE;
+            }
             break;
         }
         case JOIN: {
-            join_send_stone(&gs);
+            if (!gs.joining)
+            {
+                SDL_Thread* thread;
+                thread = SDL_CreateThread(
+                    (void*)join_send_stone, "join_send_stone", (GameState*)&gs);
+                gs.joining = SDL_TRUE;
+            }
+
             break;
         }
         case PLAY:
@@ -801,6 +816,43 @@ void update_board(Settings* s, Board* board)
     }
 }
 
+void handle_turn(GameState* gs, int row, int col, int colour)
+{
+    gs->board.cell_array[row][col]->cell_value = colour;
+    gs->to_be_placed                           = gs->board.cell_array[row][col];
+    gs->stones_to_capture                      = NO;
+    // scans the enemy group (if there is one)
+    // for liberties directly above the placed black stone
+    init_scan_enemy(gs, colour, row - 1, col);
+    // scans the enemy group directly to the right of the placed black stone
+    init_scan_enemy(gs, colour, row, col + 1);
+    // scans the enemy group directly below the placed black stone
+    init_scan_enemy(gs, colour, row + 1, col);
+    // scans the enemy group directly to the left of the placed black stone
+    init_scan_enemy(gs, colour, row, col - 1);
+
+    // Check for Ko
+    if (gs->stones_to_capture == YES &&
+        gs->ko_rule_black == gs->board.cell_array[row][col])
+    {
+        printf("Rule: ko, also known as infinity - you cannot "
+               "place the stone in the same cell as your "
+               "previous move\n\n");
+        gs->board.cell_array[row][col]->cell_value = EMPTY;
+        while (gs->capcount > 0)
+            gs->stones_captured[gs->capcount--]->has_cell_been_scanned = NO;
+        return;
+    }
+
+    capture_stones(gs);
+    get_score_text_black(gs);
+
+    if (check_for_suicide(gs, colour, row, col) == OK)
+    {
+        gs->ko_rule_black = gs->board.cell_array[row][col];
+    }
+}
+
 void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
 {
     int row            = 0;
@@ -818,70 +870,10 @@ void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
             if (gs->board.cell_array[row][col]->cell_value == EMPTY)
             {
                 if (gs->turn == BLACK)
-                {
-                    gs->board.cell_array[row][col]->cell_value = BLACK;
-                    gs->stones_to_capture                      = NO;
-                    // scans the enemy group (if there is one)
-                    // for liberties directly above the placed black stone
-                    init_scan_enemy(gs, WHITE, row - 1, col);
-                    // scans the enemy group directly to the right of the placed black stone
-                    init_scan_enemy(gs, WHITE, row, col + 1);
-                    // scans the enemy group directly below the placed black stone
-                    init_scan_enemy(gs, WHITE, row + 1, col);
-                    // scans the enemy group directly to the left of the placed black stone
-                    init_scan_enemy(gs, WHITE, row, col - 1);
-
-                    // Check for Ko
-                    if (gs->stones_to_capture == YES &&
-                        gs->ko_rule_black == gs->board.cell_array[row][col])
-                    {
-                        printf("Rule: ko, also known as infinity - you cannot "
-                               "place the stone in the same cell as your "
-                               "previous move\n\n");
-                        gs->board.cell_array[row][col]->cell_value = EMPTY;
-                        while (gs->capcount > 0)
-                            gs->stones_captured[gs->capcount--]
-                                ->has_cell_been_scanned = NO;
-                        return;
-                    }
-
-                    capture_stones(gs);
-                    get_score_text_black(gs);
-
-                    if (check_for_suicide(gs, BLACK, row, col) == OK)
-                        gs->ko_rule_black = gs->board.cell_array[row][col];
-                }
+                    handle_turn(gs, row, col, BLACK);
 
                 else if (gs->turn == WHITE)
-                {
-                    gs->board.cell_array[row][col]->cell_value = WHITE;
-                    gs->stones_to_capture                      = NO;
-
-                    init_scan_enemy(gs, BLACK, row - 1, col);
-                    init_scan_enemy(gs, BLACK, row, col + 1);
-                    init_scan_enemy(gs, BLACK, row + 1, col);
-                    init_scan_enemy(gs, BLACK, row, col - 1);
-
-                    // Check for Ko
-                    if (gs->stones_to_capture == YES &&
-                        gs->ko_rule_white == gs->board.cell_array[row][col])
-                    {
-                        printf("Rule: ko, also known as infinity - you cannot "
-                               "place the stone in the same cell as your "
-                               "previous move\n\n");
-                        gs->board.cell_array[row][col]->cell_value = EMPTY;
-                        while (gs->capcount > 0)
-                            gs->stones_captured[gs->capcount--]
-                                ->has_cell_been_scanned = NO;
-                        return;
-                    }
-
-                    capture_stones(gs);
-                    get_score_text_white(gs);
-
-                    if (check_for_suicide(gs, WHITE, row, col) == OK)
-                        gs->ko_rule_white = gs->board.cell_array[row][col];
-                }
+                    handle_turn(gs, row, col, WHITE);
             }
             break;
         }
@@ -1759,13 +1751,16 @@ void get_client(GameState* gs)
         {
             if ((gs->net.remote_ip = SDLNet_TCP_GetPeerAddress(gs->net.client)))
             {
-                printf("Host connected: %x %d\n",
-                       SDLNet_Read32(&gs->net.remote_ip->host),
-                       SDLNet_Read16(&gs->net.remote_ip->port));
+                gs->net.ipaddr = SDL_SwapBE32(gs->net.remote_ip->host);
+                printf("Accepted a connection from %d.%d.%d.%d port %hu\n",
+                       gs->net.ipaddr >> 24,
+                       gs->net.ipaddr >> 16 & 0xff,
+                       gs->net.ipaddr >> 8 & 0xff,
+                       gs->net.ipaddr & 0xff,
+                       gs->net.remote_ip->port);
                 gs->net.got_client = 1;
                 return;
             }
-
             else
                 fprintf(stderr,
                         "SDLNet_TCP_GetPeerAddress: %s\n",
@@ -1773,16 +1768,21 @@ void get_client(GameState* gs)
         }
     }
 }
+
 void host_receive_stone(GameState* gs)
 {
-    char buffer[512];
+    // if (!gs->net.got_client)
+    //     wait_for_join(gs);
+    int  len;
+    char message[3];
     while (1)
     {
-        if (SDLNet_TCP_Recv(gs->net.client, buffer, 512) > 0)
+        if ((len = SDLNet_TCP_Recv(gs->net.client, message, 3)) > 0)
         {
-            printf("Client say: %s\n", buffer);
+            printf("Received: %s\n", message);
+            place_on_pos(gs, message);
 
-            if (strcmp(buffer, "exit") == 0) /* Terminate this connection */
+            if (strcmp(message, "exit") == 0) /* Terminate this connection */
             {
                 SDLNet_TCP_Close(gs->net.client);
                 SDLNet_TCP_Close(gs->net.server);
@@ -1790,34 +1790,33 @@ void host_receive_stone(GameState* gs)
                 exit(0);
             }
         }
+        SDL_Delay(100);
     }
     return;
 }
 
 void join_send_stone(GameState* gs)
 {
-    int  len;
-    char buffer[512];
 
     /* Send messages */
+    char* next_stone = "";
     while (1)
     {
-        printf("Write something:\n>");
-        scanf("%s", buffer);
-
-        len = strlen(buffer) + 1;
-        if (SDLNet_TCP_Send(gs->net.client, (void*)buffer, len) < len)
+        if (gs->to_be_placed != NULL)
         {
-            fprintf(stderr, "SDLNet_TCP_Send: %s\n", SDLNet_GetError());
-            exit(EXIT_FAILURE);
+            if (strcmp(next_stone, gs->to_be_placed->position_str) != 0)
+            {
+                next_stone = gs->to_be_placed->position_str;
+                int len    = strlen(next_stone);
+                if (SDLNet_TCP_Send(gs->net.client, (void*)next_stone, len) <
+                    len)
+                {
+                    fprintf(stderr, "SDLNet_TCP_Send: %s\n", SDLNet_GetError());
+                    exit(EXIT_FAILURE);
+                }
+            }
         }
-
-        if (strcmp(buffer, "exit") == 0)
-        {
-            SDLNet_TCP_Close(gs->net.client);
-            printf("Terminate connection\n");
-            exit(0);
-        }
+        SDL_Delay(100);
     }
     return;
 }

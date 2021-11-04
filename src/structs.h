@@ -52,6 +52,7 @@ typedef struct
     int             capcount;
     Cell*           ko_rule_black;
     Cell*           ko_rule_white;
+    Cell*           to_be_placed;
     int             stones_to_capture;
     int             turn;
     Board           board;
@@ -60,6 +61,7 @@ typedef struct
     GameMode        game_mode;
     State           state;
     SDL_bool        hosting;
+    SDL_bool        joining;
     pthread_mutex_t mutex;
     struct
     {
