@@ -1762,7 +1762,7 @@ void host_receive_stone(GameState* gs)
         if ((len = SDLNet_TCP_Recv(gs->net.client, message, 3)) > 0)
         {
             printf("Received: %s\n", message);
-            my_place_on_pos(gs, message);
+            place_on_pos(gs, message);
 
             if (strcmp(message, "exit") == 0) /* Terminate this connection */
             {
