@@ -816,6 +816,7 @@ void update_board(Settings* s, Board* board)
     }
 }
 
+/*
 void handle_turn(GameState* gs, int row, int col, int colour)
 {
     gs->board.cell_array[row][col]->cell_value = colour;
@@ -852,6 +853,7 @@ void handle_turn(GameState* gs, int row, int col, int colour)
         gs->ko_rule_black = gs->board.cell_array[row][col];
     }
 }
+*/
 
 void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
 {
@@ -869,13 +871,76 @@ void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
         {
             if (gs->board.cell_array[row][col]->cell_value == EMPTY)
             {
+                gs->to_be_placed = gs->board.cell_array[row][col];
                 if (gs->turn == BLACK)
-                    handle_turn(gs, row, col, BLACK);
+                {
+                    gs->board.cell_array[row][col]->cell_value = BLACK;
+                    gs->stones_to_capture                      = NO;
+                    // scans the enemy group (if there is one)
+                    // for liberties directly above the placed black stone
+                    init_scan_enemy(gs, WHITE, row - 1, col);
+                    // scans the enemy group directly to the right of the placed black stone
+                    init_scan_enemy(gs, WHITE, row, col + 1);
+                    // scans the enemy group directly below the placed black stone
+                    init_scan_enemy(gs, WHITE, row + 1, col);
+                    // scans the enemy group directly to the left of the placed black stone
+                    init_scan_enemy(gs, WHITE, row, col - 1);
+
+                    // Check for Ko
+                    if (gs->stones_to_capture == YES &&
+                        gs->ko_rule_black == gs->board.cell_array[row][col])
+                    {
+                        printf("Rule: ko, also known as infinity - you cannot "
+                               "place the stone in the same cell as your "
+                               "previous move\n\n");
+                        gs->board.cell_array[row][col]->cell_value = EMPTY;
+                        while (gs->capcount > 0)
+                            gs->stones_captured[gs->capcount--]
+                                ->has_cell_been_scanned = NO;
+                        return;
+                    }
+
+                    capture_stones(gs);
+                    get_score_text_black(gs);
+
+                    if (check_for_suicide(gs, BLACK, row, col) == OK)
+                        gs->ko_rule_black = gs->board.cell_array[row][col];
+                }
 
                 else if (gs->turn == WHITE)
-                    handle_turn(gs, row, col, WHITE);
+                {
+                    gs->board.cell_array[row][col]->cell_value = WHITE;
+                    gs->stones_to_capture                      = NO;
+
+                    init_scan_enemy(gs, BLACK, row - 1, col);
+                    init_scan_enemy(gs, BLACK, row, col + 1);
+                    init_scan_enemy(gs, BLACK, row + 1, col);
+                    init_scan_enemy(gs, BLACK, row, col - 1);
+
+                    // Check for Ko
+                    if (gs->stones_to_capture == YES &&
+                        gs->ko_rule_white == gs->board.cell_array[row][col])
+                    {
+                        printf("Rule: ko, also known as infinity - you cannot "
+                               "place the stone in the same cell as your "
+                               "previous move\n\n");
+                        gs->board.cell_array[row][col]->cell_value = EMPTY;
+                        while (gs->capcount > 0)
+                            gs->stones_captured[gs->capcount--]
+                                ->has_cell_been_scanned = NO;
+                        return;
+                    }
+
+                    capture_stones(gs);
+                    get_score_text_white(gs);
+
+                    if (check_for_suicide(gs, WHITE, row, col) == OK)
+                        gs->ko_rule_white = gs->board.cell_array[row][col];
+                }
             }
-            break;
+            else
+                gs->to_be_placed = NULL;
+            return;
         }
 
         col++;
@@ -885,6 +950,7 @@ void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
             row++;
         }
     }
+    gs->to_be_placed = NULL;
 }
 
 // The first stone needs to be scanned before scan_group_for_liberties
@@ -1659,90 +1725,6 @@ void scan_empty_cells_for_ownership(GameState* gs, int row, int col)
     }
 }
 
-void place_on_pos(GameState* gs, const char* pos)
-{
-    for (int i = 0; i < gs->board.play_size + 1; i++)
-        for (int j = 0; j < gs->board.play_size + 1; j++)
-        {
-            {
-                if (gs->board.cell_array[j][i]->cell_value == EMPTY)
-                {
-                    if (strcmp(gs->board.cell_array[j][i]->position_str, pos) ==
-                        0)
-                    {
-                        switch (gs->turn)
-                        {
-                        case BLACK:
-                            gs->board.cell_array[j][i]->cell_value = BLACK;
-                            break;
-                        case WHITE:
-                            gs->board.cell_array[j][i]->cell_value = WHITE;
-                            break;
-                        }
-                        printf("Placed stone on %s.\n", pos);
-                    }
-                }
-            }
-        }
-}
-
-/* 
-void* host(void* gs)
-{
-    pthread_mutex_lock(&((GameState*)gs)->mutex);
-    char     message[4];
-    int      len;
-    SDL_bool got_client = SDL_FALSE;
-    printf("Waiting for a client to connect...\n");
-    while (1)
-    {
-        if (!got_client)
-        {
-            ((GameState*)gs)->net.client =
-                SDLNet_TCP_Accept(((GameState*)gs)->net.server);
-            if (!((GameState*)gs)->net.client)
-            {
-                SDL_Delay(100);
-                continue;
-            }
-            ((GameState*)gs)->net.remote_ip =
-                *SDLNet_TCP_GetPeerAddress(((GameState*)gs)->net.client);
-            // FIX: this
-            if (((GameState*)gs)->net.remote_ip.host == 0 &&
-                ((GameState*)gs)->net.remote_ip.port == 0)
-            {
-                printf("SDLNet_TCP_GetPeerAddress %s\n", SDLNet_GetError());
-            }
-
-            ((GameState*)gs)->net.ipaddr =
-                SDL_SwapBE32(((GameState*)gs)->net.remote_ip.host);
-            printf("Accepted a connection from %d.%d.%d.%d port %hu\n",
-                   ((GameState*)gs)->net.ipaddr >> 24,
-                   (((GameState*)gs)->net.ipaddr >> 16) & 0xff,
-                   (((GameState*)gs)->net.ipaddr >> 8) & 0xff,
-                   ((GameState*)gs)->net.ipaddr & 0xff,
-                   ((GameState*)gs)->net.remote_ip.port);
-
-            got_client = SDL_TRUE;
-            continue;
-        }
-
-        len = SDLNet_TCP_Recv(((GameState*)gs)->net.client, message, 4);
-
-        // For debugging
-        char* buf = malloc(len - 1);
-        buf[0]    = message[0];
-        buf[1]    = message[1];
-        if (len == 4)
-            buf[2] = message[2];
-        printf("Received: %s\n", buf);
-        place_on_pos(((GameState*)gs), buf);
-        free(buf);
-    }
-    pthread_mutex_unlock(&((GameState*)gs)->mutex);
-}
-*/
-
 void get_client(GameState* gs)
 {
     while (1)
@@ -1780,7 +1762,7 @@ void host_receive_stone(GameState* gs)
         if ((len = SDLNet_TCP_Recv(gs->net.client, message, 3)) > 0)
         {
             printf("Received: %s\n", message);
-            place_on_pos(gs, message);
+            my_place_on_pos(gs, message);
 
             if (strcmp(message, "exit") == 0) /* Terminate this connection */
             {
@@ -1797,7 +1779,6 @@ void host_receive_stone(GameState* gs)
 
 void join_send_stone(GameState* gs)
 {
-
     /* Send messages */
     char* next_stone = "";
     while (1)
@@ -1819,4 +1800,95 @@ void join_send_stone(GameState* gs)
         SDL_Delay(100);
     }
     return;
+}
+
+void place_on_pos(GameState* gs, const char* pos)
+{
+    int row       = 0;
+    int col       = 0;
+    int grid_size = gs->board.play_size + 1;
+
+    while (row <= grid_size)
+    {
+        if (strcmp(gs->board.cell_array[row][col]->position_str, pos) == 0)
+        {
+            if (gs->board.cell_array[row][col]->cell_value == EMPTY)
+            {
+                if (gs->turn == BLACK)
+                {
+                    gs->board.cell_array[row][col]->cell_value = BLACK;
+                    gs->stones_to_capture                      = NO;
+                    // scans the enemy group (if there is one)
+                    // for liberties directly above the placed black stone
+                    init_scan_enemy(gs, WHITE, row - 1, col);
+                    // scans the enemy group directly to the right of the placed black stone
+                    init_scan_enemy(gs, WHITE, row, col + 1);
+                    // scans the enemy group directly below the placed black stone
+                    init_scan_enemy(gs, WHITE, row + 1, col);
+                    // scans the enemy group directly to the left of the placed black stone
+                    init_scan_enemy(gs, WHITE, row, col - 1);
+
+                    // Check for Ko
+                    if (gs->stones_to_capture == YES &&
+                        gs->ko_rule_black == gs->board.cell_array[row][col])
+                    {
+                        printf("Rule: ko, also known as infinity - you cannot "
+                               "place the stone in the same cell as your "
+                               "previous move\n\n");
+                        gs->board.cell_array[row][col]->cell_value = EMPTY;
+                        while (gs->capcount > 0)
+                            gs->stones_captured[gs->capcount--]
+                                ->has_cell_been_scanned = NO;
+                        return;
+                    }
+
+                    capture_stones(gs);
+                    get_score_text_black(gs);
+
+                    if (check_for_suicide(gs, BLACK, row, col) == OK)
+                        gs->ko_rule_black = gs->board.cell_array[row][col];
+                }
+
+                else if (gs->turn == WHITE)
+                {
+                    gs->board.cell_array[row][col]->cell_value = WHITE;
+                    gs->stones_to_capture                      = NO;
+
+                    init_scan_enemy(gs, BLACK, row - 1, col);
+                    init_scan_enemy(gs, BLACK, row, col + 1);
+                    init_scan_enemy(gs, BLACK, row + 1, col);
+                    init_scan_enemy(gs, BLACK, row, col - 1);
+
+                    // Check for Ko
+                    if (gs->stones_to_capture == YES &&
+                        gs->ko_rule_white == gs->board.cell_array[row][col])
+                    {
+                        printf("Rule: ko, also known as infinity - you cannot "
+                               "place the stone in the same cell as your "
+                               "previous move\n\n");
+                        gs->board.cell_array[row][col]->cell_value = EMPTY;
+                        while (gs->capcount > 0)
+                            gs->stones_captured[gs->capcount--]
+                                ->has_cell_been_scanned = NO;
+                        return;
+                    }
+
+                    capture_stones(gs);
+                    get_score_text_white(gs);
+
+                    if (check_for_suicide(gs, WHITE, row, col) == OK)
+                        gs->ko_rule_white = gs->board.cell_array[row][col];
+                }
+            }
+            printf("Placed stone on %s.\n", pos);
+            break;
+        }
+
+        col++;
+        if (col > grid_size)
+        {
+            col = 0;
+            row++;
+        }
+    }
 }
