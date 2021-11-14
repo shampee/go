@@ -22,8 +22,10 @@ int main(int argc, char* argv[])
                          .white_sc_texture = NULL,
                          .black_sc_str     = { '\0' },
                          .white_sc_str     = { '\0' },
-                         .black_score      = 0,
-                         .white_score      = 0,
+                         .current_black_score      = 0,
+                         .current_white_score      = 0,
+                         .prev_black_score = 0,
+                         .prev_white_score = 0,
                      },
                      .board = {
                          .cell_array = { { NULL } },
@@ -101,8 +103,20 @@ int main(int argc, char* argv[])
     white_sc_rect.x = (whiteb.x + grid_cell_size * 2);
     white_sc_rect.y = (whiteb.y);
 
-    get_score_text_black(&gs);
-    get_score_text_white(&gs);
+    // get_score_text_black(&gs);
+    sprintf(gs.score.black_sc_str, " %d ", gs.score.current_black_score);
+    gs.score.black_sc_texture = get_text(gs.score.black_sc_str,
+                                         "fonts/times-new-roman.ttf",
+                                         100,
+                                         gs.score.black,
+                                         app.renderer);
+    // get_score_text_white(&gs);
+    sprintf(gs.score.white_sc_str, " %d ", gs.score.current_white_score);
+    gs.score.white_sc_texture = get_text(gs.score.white_sc_str,
+                                         "fonts/times-new-roman.ttf",
+                                         100,
+                                         gs.score.black,
+                                         app.renderer);
 
     // dimensions for reset board button
     SDL_Rect reset_board_b;
@@ -535,6 +549,9 @@ int main(int argc, char* argv[])
         // printRect(r.x, r.y, r.w, r.h);
         // printRect(s.window_size.w, s.window_size.h, 0, 0);
 
+        get_score_text_black(&gs);
+        get_score_text_white(&gs);
+
         SDL_RenderCopy(
             app.renderer, gs.score.black_sc_texture, NULL, &black_sc_rect);
         SDL_RenderCopy(
@@ -897,11 +914,11 @@ void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
                         while (gs->capcount > 0)
                             gs->stones_captured[gs->capcount--]
                                 ->has_cell_been_scanned = NO;
+                        gs->to_be_placed = NULL;
                         return;
                     }
 
                     capture_stones(gs);
-                    get_score_text_black(gs);
 
                     if (check_for_suicide(gs, BLACK, row, col) == OK)
                         gs->ko_rule_black = gs->board.cell_array[row][col];
@@ -928,11 +945,11 @@ void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
                         while (gs->capcount > 0)
                             gs->stones_captured[gs->capcount--]
                                 ->has_cell_been_scanned = NO;
+                        gs->to_be_placed = NULL;
                         return;
                     }
 
                     capture_stones(gs);
-                    get_score_text_white(gs);
 
                     if (check_for_suicide(gs, WHITE, row, col) == OK)
                         gs->ko_rule_white = gs->board.cell_array[row][col];
@@ -1048,9 +1065,9 @@ void scan_group_for_liberties(GameState* gs, int target_color, int row, int col)
 void capture_stones(GameState* gs)
 {
     if (gs->turn == BLACK)
-        gs->score.black_score += gs->capcount;
+        gs->score.current_black_score += gs->capcount;
     else if (gs->turn == WHITE)
-        gs->score.white_score += gs->capcount;
+        gs->score.current_white_score += gs->capcount;
     while (gs->capcount > 0)
     {
         gs->stones_captured[gs->capcount]->cell_value            = EMPTY;
@@ -1061,22 +1078,30 @@ void capture_stones(GameState* gs)
 
 void get_score_text_black(GameState* gs)
 {
-    sprintf(gs->score.black_sc_str, " %d ", gs->score.black_score);
-    gs->score.black_sc_texture = get_text(gs->score.black_sc_str,
-                                          "fonts/times-new-roman.ttf",
-                                          100,
-                                          gs->score.black,
-                                          app.renderer);
+    if (gs->score.current_black_score != gs->score.prev_black_score)
+    {
+        sprintf(gs->score.black_sc_str, " %d ", gs->score.current_black_score);
+        gs->score.black_sc_texture = get_text(gs->score.black_sc_str,
+                                              "fonts/times-new-roman.ttf",
+                                              100,
+                                              gs->score.black,
+                                              app.renderer);
+        gs->score.prev_black_score = gs->score.current_black_score;
+    }
 }
 
 void get_score_text_white(GameState* gs)
 {
-    sprintf(gs->score.white_sc_str, " %d ", gs->score.white_score);
-    gs->score.white_sc_texture = get_text(gs->score.white_sc_str,
-                                          "fonts/times-new-roman.ttf",
-                                          100,
-                                          gs->score.black,
-                                          app.renderer);
+    if (gs->score.current_white_score != gs->score.prev_white_score)
+    {
+        sprintf(gs->score.white_sc_str, " %d ", gs->score.current_white_score);
+        gs->score.white_sc_texture = get_text(gs->score.white_sc_str,
+                                              "fonts/times-new-roman.ttf",
+                                              100,
+                                              gs->score.black,
+                                              app.renderer);
+        gs->score.prev_white_score = gs->score.current_white_score;
+    }
 }
 
 int check_for_suicide(GameState* gs, int own_color, int row, int col)
@@ -1091,6 +1116,7 @@ int check_for_suicide(GameState* gs, int own_color, int row, int col)
                "it\n\n");
         while (gs->count > 0)
             gs->cells_scanned[gs->count--]->has_cell_been_scanned = NO;
+        gs->to_be_placed = NULL;
         return !OK;
     }
     else
@@ -1843,7 +1869,6 @@ void place_on_pos(GameState* gs, const char* pos)
                     }
 
                     capture_stones(gs);
-                    get_score_text_black(gs);
 
                     if (check_for_suicide(gs, BLACK, row, col) == OK)
                         gs->ko_rule_black = gs->board.cell_array[row][col];
@@ -1874,7 +1899,6 @@ void place_on_pos(GameState* gs, const char* pos)
                     }
 
                     capture_stones(gs);
-                    get_score_text_white(gs);
 
                     if (check_for_suicide(gs, WHITE, row, col) == OK)
                         gs->ko_rule_white = gs->board.cell_array[row][col];

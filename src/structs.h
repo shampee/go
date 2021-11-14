@@ -29,8 +29,10 @@ typedef struct
     SDL_Texture* white_sc_texture;
     char         black_sc_str[10];
     char         white_sc_str[10];
-    int          black_score;
-    int          white_score;
+    int          current_black_score;
+    int          current_white_score;
+    int          prev_black_score;
+    int          prev_white_score;
     SDL_Color    black;
     SDL_Color    white;
 } Score;
