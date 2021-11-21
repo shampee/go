@@ -54,4 +54,5 @@ void* join(void* vargp);
 void  host_receive_stone(GameState* gs);
 void  join_send_stone(GameState* gs);
 void  get_client(GameState* gs);
-void  my_place_on_pos(GameState* gs, const char* pos);
+void  send_or_receive_stones(GameState* gs);
+void  change_turn(GameState* gs);

@@ -55,6 +55,7 @@ typedef struct
     Cell*           ko_rule_black;
     Cell*           ko_rule_white;
     Cell*           to_be_placed;
+    int             player_color;
     int             stones_to_capture;
     int             turn;
     Board           board;

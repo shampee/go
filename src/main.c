@@ -205,18 +205,27 @@ int main(int argc, char* argv[])
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                if (is_cursor_within_board(&s, event.motion))
+                if (gs.game_mode == DEBUG)
                 {
-                    if (score_phase == SDL_FALSE)
-                        process_click_on_board(&s, &gs, event.motion);
-                    else if (score_phase == SDL_TRUE)
+                    if (is_cursor_within_board(&s, event.motion))
                     {
-                        toggle_dead_stones(&s, &gs, event.motion);
-                        determine_territory(&gs);
+                        if (score_phase == SDL_FALSE)
+                            process_click_on_board(&s, &gs, event.motion);
+                        else if (score_phase == SDL_TRUE)
+                        {
+                            toggle_dead_stones(&s, &gs, event.motion);
+                            determine_territory(&gs);
+                        }
                     }
                 }
 
-                else if (is_cursor_within_button(event.motion, blackb))
+                else if (gs.game_mode == REGULAR)
+                {
+                    if (score_phase == SDL_FALSE && gs.player_color == gs.turn)
+                        process_click_on_board(&s, &gs, event.motion);
+                }
+
+                if (is_cursor_within_button(event.motion, blackb))
                     (&gs)->turn = BLACK;
                 else if (is_cursor_within_button(event.motion, whiteb))
                     (&gs)->turn = WHITE;
@@ -570,8 +579,8 @@ int main(int argc, char* argv[])
             if (!gs.hosting)
             {
                 SDL_Thread* thread;
-                thread = SDL_CreateThread((void*)host_receive_stone,
-                                          "host_receive_stone",
+                thread = SDL_CreateThread((void*)send_or_receive_stones,
+                                          "send_or_receive_stones",
                                           (GameState*)&gs);
 
                 gs.hosting = SDL_TRUE;
@@ -582,8 +591,9 @@ int main(int argc, char* argv[])
             if (!gs.joining)
             {
                 SDL_Thread* thread;
-                thread = SDL_CreateThread(
-                    (void*)join_send_stone, "join_send_stone", (GameState*)&gs);
+                thread     = SDL_CreateThread((void*)send_or_receive_stones,
+                                          "send_or_receive_stones",
+                                          (GameState*)&gs);
                 gs.joining = SDL_TRUE;
             }
 
@@ -689,6 +699,7 @@ void init_sdl(Settings* s, GameState* gs, char argc, char* argv[])
                 exit(1);
             }
             gs->net.got_client = 0;
+            gs->player_color   = BLACK;
         }
 
         else if (gs->state == JOIN)
@@ -703,6 +714,7 @@ void init_sdl(Settings* s, GameState* gs, char argc, char* argv[])
                 fprintf(stderr, "SDLNet_TCP_Open: %s\n", SDLNet_GetError());
                 exit(EXIT_FAILURE);
             }
+            gs->player_color = WHITE;
         }
     }
     else
@@ -1777,6 +1789,7 @@ void get_client(GameState* gs)
     }
 }
 
+/*
 void host_receive_stone(GameState* gs)
 {
     // if (!gs->net.got_client)
@@ -1790,7 +1803,7 @@ void host_receive_stone(GameState* gs)
             printf("Received: %s\n", message);
             place_on_pos(gs, message);
 
-            if (strcmp(message, "exit") == 0) /* Terminate this connection */
+            if (strcmp(message, "exit") == 0)
             {
                 SDLNet_TCP_Close(gs->net.client);
                 SDLNet_TCP_Close(gs->net.server);
@@ -1805,28 +1818,25 @@ void host_receive_stone(GameState* gs)
 
 void join_send_stone(GameState* gs)
 {
-    /* Send messages */
-    char* next_stone = "";
     while (1)
     {
         if (gs->to_be_placed != NULL)
         {
-            if (strcmp(next_stone, gs->to_be_placed->position_str) != 0)
+            int len = strlen(gs->to_be_placed->position_str);
+            if (SDLNet_TCP_Send(gs->net.client,
+                                (void*)gs->to_be_placed->position_str,
+                                len) < len)
             {
-                next_stone = gs->to_be_placed->position_str;
-                int len    = strlen(next_stone);
-                if (SDLNet_TCP_Send(gs->net.client, (void*)next_stone, len) <
-                    len)
-                {
-                    fprintf(stderr, "SDLNet_TCP_Send: %s\n", SDLNet_GetError());
-                    exit(EXIT_FAILURE);
-                }
+                fprintf(stderr, "SDLNet_TCP_Send: %s\n", SDLNet_GetError());
+                exit(EXIT_FAILURE);
             }
+            gs->to_be_placed = NULL;
         }
         SDL_Delay(100);
     }
     return;
 }
+*/
 
 void place_on_pos(GameState* gs, const char* pos)
 {
@@ -1915,4 +1925,53 @@ void place_on_pos(GameState* gs, const char* pos)
             row++;
         }
     }
+}
+
+void send_or_receive_stones(GameState* gs)
+{
+    char message[3];
+    while (1)
+    {
+        if (gs->turn != gs->player_color)
+            while (1)
+            {
+                if (SDLNet_TCP_Recv(gs->net.client, message, 3) > 0)
+                {
+                    printf("Received: %s\n", message);
+                    place_on_pos(gs, message);
+                    change_turn(gs);
+                    break;
+                }
+                SDL_Delay(100);
+            }
+        else if (gs->turn == gs->player_color)
+            while (1)
+            {
+                if (gs->to_be_placed != NULL)
+                {
+                    int len = strlen(gs->to_be_placed->position_str);
+                    if (SDLNet_TCP_Send(gs->net.client,
+                                        (void*)gs->to_be_placed->position_str,
+                                        len) < len)
+                    {
+                        fprintf(
+                            stderr, "SDLNet_TCP_Send: %s\n", SDLNet_GetError());
+                        exit(EXIT_FAILURE);
+                    }
+                    gs->to_be_placed = NULL;
+                    change_turn(gs);
+                    break;
+                }
+                SDL_Delay(100);
+            }
+    }
+    return;
+}
+
+void change_turn(GameState* gs)
+{
+    if (gs->turn == BLACK)
+        gs->turn = WHITE;
+    else if (gs->turn == WHITE)
+        gs->turn = BLACK;
 }
