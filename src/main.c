@@ -1787,6 +1787,7 @@ void get_client(GameState* gs)
                         "SDLNet_TCP_GetPeerAddress: %s\n",
                         SDLNet_GetError());
         }
+        SDL_Delay(100);
     }
 }
 
