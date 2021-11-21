@@ -505,8 +505,9 @@ int main(int argc, char* argv[])
                     SDL_SetRenderDrawColor(
                         app.renderer, white.r, white.g, white.b, white.a);
 
-                SDL_RenderFillRect(app.renderer,
-                                   &gs.board.grid_cursor_ghost->dims);
+                if (gs.game_mode == DEBUG || gs.turn == gs.player_color)
+                    SDL_RenderFillRect(app.renderer,
+                                       &gs.board.grid_cursor_ghost->dims);
             }
         }
         // Draw stones.
@@ -1932,6 +1933,7 @@ void send_or_receive_stones(GameState* gs)
     char message[3];
     while (1)
     {
+        // receive stones
         if (gs->turn != gs->player_color)
             while (1)
             {
@@ -1944,6 +1946,7 @@ void send_or_receive_stones(GameState* gs)
                 }
                 SDL_Delay(100);
             }
+        // send stones
         else if (gs->turn == gs->player_color)
             while (1)
             {
