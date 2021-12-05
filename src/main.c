@@ -603,6 +603,8 @@ int main(int argc, char* argv[])
         case PLAY:
             break;
         }
+
+        SDL_Delay(1000 / 60);
     }
     SDLNet_TCP_Close(gs.net.server);
     SDLNet_TCP_Close(gs.net.client);
@@ -1787,7 +1789,6 @@ void get_client(GameState* gs)
                         "SDLNet_TCP_GetPeerAddress: %s\n",
                         SDLNet_GetError());
         }
-        SDL_Delay(100);
     }
 }
 
