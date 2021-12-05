@@ -580,9 +580,10 @@ int main(int argc, char* argv[])
             if (!gs.hosting)
             {
                 SDL_Thread* thread;
-                thread = SDL_CreateThread((void*)send_or_receive_stones,
-                                          "send_or_receive_stones",
-                                          (GameState*)&gs);
+                thread =
+                    SDL_CreateThread((SDL_ThreadFunction)send_or_receive_stones,
+                                     "send_or_receive_stones",
+                                     (GameState*)&gs);
 
                 gs.hosting = SDL_TRUE;
             }
@@ -592,9 +593,10 @@ int main(int argc, char* argv[])
             if (!gs.joining)
             {
                 SDL_Thread* thread;
-                thread     = SDL_CreateThread((void*)send_or_receive_stones,
-                                          "send_or_receive_stones",
-                                          (GameState*)&gs);
+                thread =
+                    SDL_CreateThread((SDL_ThreadFunction)send_or_receive_stones,
+                                     "send_or_receive_stones",
+                                     (GameState*)&gs);
                 gs.joining = SDL_TRUE;
             }
 
