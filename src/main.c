@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
                      .board = {
                          .cell_array = { { NULL } },
                          .grid_cursor_ghost = NULL,
-                         .play_size         = 9,
+                         .play_size         = 13,
                     },
                      .hosting = SDL_FALSE,
     };
@@ -173,8 +173,7 @@ int main(int argc, char* argv[])
                     "%c%d",
                     alphabet_char,
                     num_char);
-            // Shouldn't this be something like if (j == gs.board.play_size) ?
-            if (j == 9)
+            if (j == gs.board.play_size)
             {
                 num_char = gs.board.play_size + 2;
             }
@@ -1947,6 +1946,8 @@ void send_or_receive_stones(GameState* gs)
                     printf("Received: %s\n", message);
                     place_on_pos(gs, message);
                     change_turn(gs);
+                    // when message coordinates go to double digits (e.g A19), the next received stone (e.g A3) would be changed to A39, the next statement fixes this
+                    message[2] = '\0';
                     break;
                 }
                 SDL_Delay(100);
