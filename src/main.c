@@ -163,6 +163,8 @@ int main(int argc, char* argv[])
                                         app.renderer);
     }
 
+
+    // store a position string (eg. B4) in each Cell - used for net stuff later on
     alphabet_char = 'A';
     alphabet_char--;
     for (int i = 0; i < gs.board.play_size + 1; alphabet_char++, i++)
@@ -179,6 +181,7 @@ int main(int argc, char* argv[])
             }
         }
     }
+
 
     // load image for dot
     SDL_Texture* dot_image;
@@ -204,12 +207,15 @@ int main(int argc, char* argv[])
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
+                // if in debug mode do this
                 if (gs.game_mode == DEBUG)
                 {
                     if (is_cursor_within_board(&s, event.motion))
                     {
+                        // if game still going process placing stones
                         if (score_phase == SDL_FALSE)
                             process_click_on_board(&s, &gs, event.motion);
+                        // if both players pass (not implemented yet), or the determine territory button is pressed, it is now the score phase - you can toggle stones dead or alive
                         else if (score_phase == SDL_TRUE)
                         {
                             toggle_dead_stones(&s, &gs, event.motion);
@@ -217,23 +223,29 @@ int main(int argc, char* argv[])
                         }
                     }
                 }
-
+                // if in regular mode do this
                 else if (gs.game_mode == REGULAR)
                 {
+                    // if game still going process placing stones
                     if (score_phase == SDL_FALSE && gs.player_color == gs.turn)
                         process_click_on_board(&s, &gs, event.motion);
+                    // to do: score phase
+                   
                 }
 
+                // clicking on black stone button makes turn black
                 if (is_cursor_within_button(event.motion, blackb))
                     (&gs)->turn = BLACK;
+                // clicking on white stone button makes turn white
                 else if (is_cursor_within_button(event.motion, whiteb))
                     (&gs)->turn = WHITE;
+                // clicking reset board button resets board
                 else if (is_cursor_within_button(event.motion, reset_board_b))
                 {
                     reset_board(&gs);
                     score_phase = SDL_FALSE;
                 }
-
+                // clicking determine territory button turns score phase on, marks black and white territory and dead stones
                 else if (is_cursor_within_button(event.motion,
                                                  calc_territory_b))
                 {
@@ -241,8 +253,10 @@ int main(int argc, char* argv[])
                     determine_territory(&gs);
                     score_phase = SDL_TRUE;
                 }
+                 // to do: pass turn button for each player to determine when placing stones has ended
                 break;
             case SDL_MOUSEMOTION:
+                // mouse over cells is a black or white square depending on whose turn it is
                 if (is_cursor_within_board(&s, event.motion))
                     process_mouse_over_board(&s, &gs.board, event.motion);
                 if (!mouse_active)
@@ -282,6 +296,8 @@ int main(int argc, char* argv[])
             break;
         }
         */
+
+        // changes dimensions of textures and cells depending on size of window
         grid_cell_size = s.window_size.h / (grid_size + 1);
         blackb.w       = grid_cell_size;
         blackb.h       = grid_cell_size;
@@ -497,21 +513,26 @@ int main(int argc, char* argv[])
             if (gs.board.grid_cursor_ghost->cell_value == EMPTY &&
                 score_phase == SDL_FALSE)
             {
+                // set render color to black if turn is black
                 if (gs.turn == BLACK)
                     SDL_SetRenderDrawColor(
                         app.renderer, black.r, black.g, black.b, black.a);
+                // set render color to white if turn is white
                 else if (gs.turn == WHITE)
                     SDL_SetRenderDrawColor(
                         app.renderer, white.r, white.g, white.b, white.a);
 
+                // draw ghost cursor only when it is debug mode or if it is the players turn
                 if (gs.game_mode == DEBUG || gs.turn == gs.player_color)
                     SDL_RenderFillRect(app.renderer,
                                        &gs.board.grid_cursor_ghost->dims);
             }
         }
-        // Draw stones.
+        // Draw stones and territory
         for (row = 0, col = 0; row <= grid_size;)
         {
+            
+            // draw black territory
             if (gs.board.cell_array[row][col]->territory_value == BLACK_T)
             {
                 SDL_SetRenderDrawColor(app.renderer,
@@ -522,6 +543,7 @@ int main(int argc, char* argv[])
                 SDL_RenderFillRect(app.renderer,
                                    &gs.board.cell_array[row][col]->dims);
             }
+            // draw white territory
             else if (gs.board.cell_array[row][col]->territory_value == WHITE_T)
             {
                 SDL_SetRenderDrawColor(app.renderer,
@@ -532,11 +554,13 @@ int main(int argc, char* argv[])
                 SDL_RenderFillRect(app.renderer,
                                    &gs.board.cell_array[row][col]->dims);
             }
+            // draw black stones
             if (gs.board.cell_array[row][col]->cell_value == BLACK)
                 SDL_RenderCopy(app.renderer,
                                black_stone,
                                NULL,
                                &gs.board.cell_array[row][col]->dims);
+            // draw white stones
             else if (gs.board.cell_array[row][col]->cell_value == WHITE)
                 SDL_RenderCopy(app.renderer,
                                white_stone,
@@ -558,9 +582,11 @@ int main(int argc, char* argv[])
         // printRect(r.x, r.y, r.w, r.h);
         // printRect(s.window_size.w, s.window_size.h, 0, 0);
 
+
+        // if score changes for black or white update textures for the score
         get_score_text_black(&gs);
         get_score_text_white(&gs);
-
+        // renders the score boxes for black and white
         SDL_RenderCopy(
             app.renderer, gs.score.black_sc_texture, NULL, &black_sc_rect);
         SDL_RenderCopy(
@@ -604,9 +630,10 @@ int main(int argc, char* argv[])
         case PLAY:
             break;
         }
-
+        // delay to stop cpu going 100%
         SDL_Delay(1000 / 60);
     }
+    // closes ports when program quits when 'x' in corner is clicked
     SDLNet_TCP_Close(gs.net.server);
     SDLNet_TCP_Close(gs.net.client);
 
