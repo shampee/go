@@ -56,3 +56,6 @@ void  join_send_stone(GameState* gs);
 void  get_client(GameState* gs);
 void  send_or_receive_stones(GameState* gs);
 void  change_turn(GameState* gs);
+
+void handle_turn(GameState* gs, int row, int col, int colour);
+int is_there_ko(GameState* gs, int own_color, int row, int col);

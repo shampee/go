@@ -876,25 +876,37 @@ void update_board(Settings* s, Board* board)
     }
 }
 
-/*
 void handle_turn(GameState* gs, int row, int col, int colour)
 {
+    int enemy_colour;
+
+    if (colour == BLACK)
+    {
+        enemy_colour = WHITE;
+    }
+
+    else
+    {
+        enemy_colour = BLACK;
+    }
+        
+    
     gs->board.cell_array[row][col]->cell_value = colour;
     gs->to_be_placed                           = gs->board.cell_array[row][col];
     gs->stones_to_capture                      = NO;
+    
     // scans the enemy group (if there is one)
     // for liberties directly above the placed black stone
-    init_scan_enemy(gs, colour, row - 1, col);
+    init_scan_enemy(gs, enemy_colour, row - 1, col);
     // scans the enemy group directly to the right of the placed black stone
-    init_scan_enemy(gs, colour, row, col + 1);
+    init_scan_enemy(gs, enemy_colour, row, col + 1);
     // scans the enemy group directly below the placed black stone
-    init_scan_enemy(gs, colour, row + 1, col);
+    init_scan_enemy(gs, enemy_colour, row + 1, col);
     // scans the enemy group directly to the left of the placed black stone
-    init_scan_enemy(gs, colour, row, col - 1);
+    init_scan_enemy(gs, enemy_colour, row, col - 1);
 
     // Check for Ko
-    if (gs->stones_to_capture == YES &&
-        gs->ko_rule_black == gs->board.cell_array[row][col])
+    if (is_there_ko(gs, colour, row, col) == YES)
     {
         printf("Rule: ko, also known as infinity - you cannot "
                "place the stone in the same cell as your "
@@ -910,11 +922,32 @@ void handle_turn(GameState* gs, int row, int col, int colour)
 
     if (check_for_suicide(gs, colour, row, col) == OK)
     {
-        gs->ko_rule_black = gs->board.cell_array[row][col];
+        if (colour == BLACK)
+            gs->ko_rule_black = gs->board.cell_array[row][col];
+        else
+            gs->ko_rule_white = gs->board.cell_array[row][col];
     }
 }
-*/
 
+int is_there_ko(GameState* gs, int own_color, int row, int col)
+{
+    if (own_color == BLACK)
+    {
+        if(gs->stones_to_capture == YES &&
+        gs->ko_rule_black == gs->board.cell_array[row][col])
+            return YES;
+    }
+        
+    else
+    {
+        if(gs->stones_to_capture == YES &&
+        gs->ko_rule_white == gs->board.cell_array[row][col])
+            return YES;
+    }
+        
+    return NO;
+
+}
 void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
 {
     int row            = 0;
@@ -933,70 +966,9 @@ void process_click_on_board(Settings* s, GameState* gs, SDL_MouseMotionEvent m)
             {
                 gs->to_be_placed = gs->board.cell_array[row][col];
                 if (gs->turn == BLACK)
-                {
-                    gs->board.cell_array[row][col]->cell_value = BLACK;
-                    gs->stones_to_capture                      = NO;
-                    // scans the enemy group (if there is one)
-                    // for liberties directly above the placed black stone
-                    init_scan_enemy(gs, WHITE, row - 1, col);
-                    // scans the enemy group directly to the right of the placed black stone
-                    init_scan_enemy(gs, WHITE, row, col + 1);
-                    // scans the enemy group directly below the placed black stone
-                    init_scan_enemy(gs, WHITE, row + 1, col);
-                    // scans the enemy group directly to the left of the placed black stone
-                    init_scan_enemy(gs, WHITE, row, col - 1);
-
-                    // Check for Ko
-                    if (gs->stones_to_capture == YES &&
-                        gs->ko_rule_black == gs->board.cell_array[row][col])
-                    {
-                        printf("Rule: ko, also known as infinity - you cannot "
-                               "place the stone in the same cell as your "
-                               "previous move\n\n");
-                        gs->board.cell_array[row][col]->cell_value = EMPTY;
-                        while (gs->capcount > 0)
-                            gs->stones_captured[gs->capcount--]
-                                ->has_cell_been_scanned = NO;
-                        gs->to_be_placed = NULL;
-                        return;
-                    }
-
-                    capture_stones(gs);
-
-                    if (check_for_suicide(gs, BLACK, row, col) == OK)
-                        gs->ko_rule_black = gs->board.cell_array[row][col];
-                }
-
+                    handle_turn(gs, row, col, BLACK);
                 else if (gs->turn == WHITE)
-                {
-                    gs->board.cell_array[row][col]->cell_value = WHITE;
-                    gs->stones_to_capture                      = NO;
-
-                    init_scan_enemy(gs, BLACK, row - 1, col);
-                    init_scan_enemy(gs, BLACK, row, col + 1);
-                    init_scan_enemy(gs, BLACK, row + 1, col);
-                    init_scan_enemy(gs, BLACK, row, col - 1);
-
-                    // Check for Ko
-                    if (gs->stones_to_capture == YES &&
-                        gs->ko_rule_white == gs->board.cell_array[row][col])
-                    {
-                        printf("Rule: ko, also known as infinity - you cannot "
-                               "place the stone in the same cell as your "
-                               "previous move\n\n");
-                        gs->board.cell_array[row][col]->cell_value = EMPTY;
-                        while (gs->capcount > 0)
-                            gs->stones_captured[gs->capcount--]
-                                ->has_cell_been_scanned = NO;
-                        gs->to_be_placed = NULL;
-                        return;
-                    }
-
-                    capture_stones(gs);
-
-                    if (check_for_suicide(gs, WHITE, row, col) == OK)
-                        gs->ko_rule_white = gs->board.cell_array[row][col];
-                }
+                    handle_turn(gs, row, col, WHITE);
             }
             else
                 gs->to_be_placed = NULL;
